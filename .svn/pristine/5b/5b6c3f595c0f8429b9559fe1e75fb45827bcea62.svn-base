@@ -1,0 +1,385 @@
+package kr.or.ddit.business.busiboard.controller;
+
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.annotation.Resource;
+import javax.servlet.http.Cookie;
+import javax.servlet.http.HttpSession;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.CookieValue;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.multipart.MultipartFile;
+
+import kr.or.ddit.business.busiboard.service.BusiBoardService;
+import kr.or.ddit.business.busiboard.vo.BusiBoardVO;
+import kr.or.ddit.business.busiboard.vo.BusiFileVO;
+import kr.or.ddit.business.busiboard.vo.BusiPostVO;
+import kr.or.ddit.business.busiboard.vo.BusiRepleVO;
+import kr.or.ddit.comm.util.FileUtils;
+import kr.or.ddit.comm.vo.FileVO;
+import kr.or.ddit.comm.vo.PaginationVO;
+import kr.or.ddit.emp.vo.EmpVO;
+import kr.or.ddit.report.vo.ReportFileVO;
+
+@Controller
+public class BusiBoardController {
+	
+	private static final Logger logger = LoggerFactory.getLogger(BusiBoardController.class);
+	
+	@Resource
+	private BusiBoardService busiBoardService;
+	
+	//접속한 사원의 부서 게시판을 가져옴
+	
+	//left.jsp
+	@RequestMapping(path="/selectBoard")
+	public String selectBoard(BusiBoardVO busiBoardVo, Model model) {
+		List<BusiBoardVO> busiBoardList = null;
+		try {
+			busiBoardList = busiBoardService.selectBusiBoardList(busiBoardVo);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		model.addAttribute("busiBoardList", busiBoardList);
+		return "jsonView";
+	}
+	//left.jsp
+	
+	
+	//left.jsp
+	@RequestMapping("/selectPostList")
+	public String selectPostList(BusiBoardVO busiBoardVo, Model model, HttpSession session) {
+		//접속자의 부서 정보를 받아옴
+		EmpVO emp = (EmpVO) session.getAttribute("EMP");
+		busiBoardVo.setDeptId(emp.getDeptId());
+		//페이징 처리 기본 설정
+		PaginationVO paginationInfo = new PaginationVO();
+		paginationInfo.setCurrentPageNo(busiBoardVo.getPageIndex()); // 입력값 or 기본값(1)
+		paginationInfo.setRecordCountPerPage(busiBoardVo.getPageUnit()); // 입력값 or 기본값(5)
+		paginationInfo.setPageSize(busiBoardVo.getPageSize()); // 입력값 or 기본값(5)
+		
+		busiBoardVo.setFirstIndex(paginationInfo.getFirstRecordIndex()); //계산값
+		busiBoardVo.setLastIndex(paginationInfo.getLastRecordIndex());	//계산값
+		busiBoardVo.setRecordCountPerPage(paginationInfo.getRecordCountPerPage());
+		
+		//전체 업무보고 게시판을 가져옴
+		List<BusiBoardVO> busiBoardList = null;
+		List<BusiPostVO> busiPostList = null;
+		BusiBoardVO busiBoard = null;
+		int totCnt = 0;
+		try {
+			busiBoardList = busiBoardService.selectBusiBoardList(busiBoardVo);
+			if(busiBoardVo.getBoardId() == null || "".equals(busiBoardVo.getBoardId())) {
+				busiBoardVo.setBoardId(busiBoardList.get(0).getBoardId());
+			}
+			busiPostList = busiBoardService.selectBusiPostList(busiBoardVo);
+			model.addAttribute("busiBoardList", busiBoardList);
+			model.addAttribute("busiPostList", busiPostList);
+			totCnt = busiBoardService.selectBusiPostTotCnt(busiBoardVo);
+			paginationInfo.setTotalRecordCount(totCnt);
+			model.addAttribute("paginationInfo", paginationInfo);
+			busiBoard = busiBoardService.selectBusiBoard(busiBoardVo);
+			busiBoardVo.setDeptId(busiBoard.getDeptId());
+			busiBoardVo.setBoardNm(busiBoard.getBoardNm());
+			model.addAttribute("busiBoardVo", busiBoardVo);
+		} catch (Exception e1) {
+			e1.printStackTrace();
+		}
+		return "tiles/business/postListView";
+	}
+	//postListView.jsp
+	
+	//postListView.jsp
+	@RequestMapping("/insertPostView")
+	public String insertPostView(BusiPostVO busiPostVo, Model model, HttpSession session) {
+		logger.debug("아이디좀 보자! : {}", busiPostVo);
+		/* 글 작성 화면 표시 */
+		model.addAttribute("busiPostVo", busiPostVo);
+		session.setAttribute("uploadtoken", "insertPost");
+		return "tiles/business/insertPost";
+	}
+	//insertPost.jsp
+	
+	//insertPost.jsp
+	@RequestMapping(path="/insertPost", method= {RequestMethod.POST})
+	public String insertPost(BusiPostVO busiPostVo, Model model, HttpSession session) {
+		/* 작성한 글 정보와 첨부파일을 받아 db에 등록 후 목록화면으로 이동 */
+		logger.debug("글을 보자 : {}", busiPostVo);
+		String uploadtoken = (String) session.getAttribute("uploadtoken");
+		EmpVO emp = (EmpVO) session.getAttribute("EMP");
+		busiPostVo.setEmpId(emp.getEmpId());
+		
+		if(busiPostVo.getUploadtoken().equals(uploadtoken)) {
+			List<FileVO> fileList = FileUtils.createFileList(busiPostVo.getRealfilename());
+			
+			List<BusiFileVO> busiFileList = new ArrayList<BusiFileVO>();
+			
+			for (FileVO file : fileList ) {
+				BusiFileVO busiFile = new BusiFileVO(file, busiPostVo.getPostSeq());
+				busiFileList.add(busiFile);
+			}
+			busiPostVo.setBusiFileList(busiFileList);
+			/*Map<String, Object> busiPostMap = new HashMap<String, Object>();
+			busiPostMap.put("busiPost", busiPostVo);
+			busiPostMap.put("busiFileList", busiFileList);*/
+			int cnt = 0;
+			try {
+				cnt = busiBoardService.insertBusiPost(busiPostVo);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}			
+		}
+		BusiBoardVO busiBoardVo = new BusiBoardVO();
+		busiBoardVo.setBoardId(busiPostVo.getBoardId());
+		busiBoardVo.setPageIndex(busiPostVo.getPageIndex());
+		busiBoardVo.setPageUnit(busiPostVo.getRecordCountPerPage());
+		busiBoardVo.setSearchCondition(busiPostVo.getSearchCondition());
+		busiBoardVo.setSearchKeyword(busiPostVo.getSearchKeyword());
+		model.addAttribute("busiBoardVo", busiBoardVo);
+		
+		session.removeAttribute("uploadtoken");
+		return "forward:/selectPostList";
+		/*return "redirect:selectPostList?boardId="+busiPostVo.getBoardId();*/
+		
+	}
+	///selectPostList?boardId=
+	
+	//postListView.jsp
+	@RequestMapping("/selectPost")
+	public String  selectPost(BusiPostVO busiPostVo, HttpSession session, Model model) {
+		/* 게시글의 아이디를 입력받아 게시글을 vo에 담아 페이지에 표시 */
+		EmpVO emp = (EmpVO)session.getAttribute("EMP");
+		busiPostVo.setSessionEmpId(emp.getEmpId());
+		
+		logger.debug("게시글 아이디 갖고왔니? : {}", busiPostVo.getPostSeq());
+		BusiPostVO busiPost = null;
+		try {
+			busiPost = busiBoardService.selectBusiPostContent(busiPostVo);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+		String uploadtoken = (String) session.getAttribute("uploadtoken");
+		//logger.debug("uploadtoken : {}", uploadtoken);
+		
+		if(uploadtoken == null || "".equals(uploadtoken)) {
+			session.setAttribute("uploadtoken", "insertReple");			
+		}
+		
+		model.addAttribute("busiPostVo", busiPost);
+		
+		return "tiles/business/postView";
+	}
+	//postView.jsp
+	
+	//postView.jsp
+	@RequestMapping(path="/updatePostView", method= {RequestMethod.POST})
+	public String updatePostView(BusiPostVO busiPostVo, Model model, HttpSession session) {
+		EmpVO emp = (EmpVO) session.getAttribute("EMP");
+		busiPostVo.setSessionEmpId(emp.getEmpId());
+		
+		//Map<String, Object> busiPostMap = null;
+		BusiPostVO busiPost = null;
+		String msg = null;
+		try {
+			busiPost = busiBoardService.selectBusiPostContent(busiPostVo);
+			if(!(busiPost.getEmpId()).equals(busiPostVo.getSessionEmpId())) {
+				msg = "권한이 없습니다";
+				busiPost.setMsg(msg);
+			}
+			model.addAttribute("busiPostVo", busiPost);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+		if(msg != null) {
+			return "tiles/business/postView";
+		}
+		session.setAttribute("uploadtoken", "updatePost");
+		return "tiles/business/updatePostView";
+	
+	}
+	//updatePostView.jsp
+	
+	//updatePostView.jsp
+	@RequestMapping("/updatePost")
+	public String updatePost(BusiPostVO busiPostVo, Model model, HttpSession session) {
+		
+		//Map<String, Object> postMap = new HashMap<>();
+		//postMap.put("busiPost", busiPostVo);
+		
+		// form에서 파일 받아온 것을 db에 저장하기 위해 파일명 작업
+		EmpVO emp = (EmpVO)session.getAttribute("EMP");
+		busiPostVo.setSessionEmpId(emp.getEmpId());
+		String uploadtoken = (String) session.getAttribute("uploadtoken");
+		logger.debug("busiPostVo.getUploadtoken : {}", busiPostVo.getUploadtoken());
+		if(busiPostVo.getUploadtoken().equals(uploadtoken)) {
+			List<FileVO> fileList = FileUtils.createFileList(busiPostVo.getRealfilename());
+			
+			List<BusiFileVO> busiFileList = new ArrayList<BusiFileVO>();
+			
+			for (FileVO file : fileList ) {
+				BusiFileVO busiFile = new BusiFileVO(file, busiPostVo.getPostSeq());
+				busiFileList.add(busiFile);
+			}
+			
+			
+			//postMap.put("busiFileList", busiFileList);
+			busiPostVo.setBusiFileList(busiFileList);
+			
+			List<BusiFileVO> delFileList = new ArrayList<>();
+			
+			String[] delFileArr = busiPostVo.getDelListString().split(" ");
+			logger.debug("delFileArr : {}", Arrays.toString(delFileArr));
+			
+			if(delFileArr.length > 0 && !"".equals(delFileArr[0])) {
+				for(String delFileString : delFileArr) {
+					delFileList.add(new BusiFileVO(Integer.parseInt(delFileString), 0, "", "", "N"));
+				}			
+			}
+			busiPostVo.setDelFileList(delFileList);
+			//postMap.put("delFileList", delFileList);
+			
+			try {
+				busiBoardService.updateBusiPost(busiPostVo);
+				session.removeAttribute("uploadtoken");
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+			
+		}
+		
+		BusiPostVO busiPost = new BusiPostVO();
+		busiPost.setBoardId(busiPostVo.getBoardId());
+		busiPost.setPostSeq(busiPostVo.getPostSeq());
+		busiPost.setParentpostId(busiPostVo.getParentpostId());
+		busiPost.setPageIndex(busiPostVo.getPageIndex());
+		busiPost.setRecordCountPerPage(busiPostVo.getRecordCountPerPage());
+		busiPost.setSearchCondition(busiPostVo.getSearchCondition());
+		busiPost.setSearchKeyword(busiPostVo.getSearchKeyword());
+		model.addAttribute("busiPostVo", busiPost);
+		/* 수정된 게시글 정보를 입력받아 게시글을 db에 업데이트
+		 * 추가된 파일은 insert
+		 * 기존 파일 중 삭제할 파일은 delete
+		 */
+		return "forward:/selectPost";
+		/*return "tiles/business/postView";*/
+		/*return "redirect:/selectPost?postSeq="+busiPostVo.getPostSeq();*/
+	}
+	///selectPost?postId=
+	
+	//postView.jsp
+	@RequestMapping("/deletePost")
+	public String deletePost(BusiPostVO busiPostVo, Model model) {
+		
+		busiPostVo.setPostSt("N");
+		try {
+			busiBoardService.deleteBusiPost(busiPostVo);
+			BusiBoardVO busiBoardVo = new BusiBoardVO();
+			busiBoardVo.setBoardId(busiPostVo.getBoardId());
+			busiBoardVo.setPageIndex(busiPostVo.getPageIndex());
+			busiBoardVo.setPageUnit(busiPostVo.getRecordCountPerPage());
+			busiBoardVo.setSearchCondition(busiPostVo.getSearchCondition());
+			busiBoardVo.setSearchKeyword(busiPostVo.getSearchKeyword());
+			model.addAttribute("busiBoardVo", busiBoardVo);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+		/*
+		 * 삭제할 게시글의 아이디를 받아 글의 활성화 상태를 비활성화로 전환
+		 * 파일에 대해서는 아무 작업도 없음.
+		 */
+/*		String query = "?boardId="+busiPostVo.getBoardId()+"&pageIndex="+busiPostVo.getPageIndex()+"&pageUnit="+busiPostVo.getPageUnit()
+					   +"&searchCondition="+busiPostVo.getSearchCondition()+"&searchKeyword="+busiPostVo.getSearchKeyword();*/
+		
+		return "forward:/selectPostList";
+	}
+	///selectPostList?boardId=
+	
+	//postView.jsp
+	@RequestMapping("/postFileDownload")
+	public String postFileDownload(BusiFileVO busiFileVo, Model model) {
+		BusiFileVO busiFile = null;
+		try {
+			busiFile = busiBoardService.selectBusiFile(busiFileVo);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		model.addAttribute("busiFile", busiFile);
+		return "fileDownloadView";
+	}
+	//downloadView
+	
+	//수정해야함
+	@RequestMapping(path="/insertBusiReple", method= {RequestMethod.POST})
+	public String insertBusiReple(BusiRepleVO busiRepleVo, Model model, HttpSession session) {
+		logger.debug("**insertBusiReple busiRepleVo : {}", busiRepleVo);
+		String cont = busiRepleVo.getRepleCont();
+		String newCont = cont.replaceAll("\r\n", "<br>");
+		busiRepleVo.setRepleCont(newCont);
+		String uploadtoken = (String)session.getAttribute("uploadtoken");
+		
+		if(busiRepleVo.getUploadtoken().equals(uploadtoken)) {
+			try {
+				busiBoardService.insertBusiReple(busiRepleVo);
+				if("insertReple".equals(uploadtoken)) {
+					session.setAttribute("uploadtoken", "refresh");				
+				}
+				else if("refresh".equals(uploadtoken)){
+					session.setAttribute("uploadtoken", "insertReple");
+				}
+				
+			} catch (Exception e) {
+				e.printStackTrace();
+			}			
+		}
+		BusiPostVO busiPost = new BusiPostVO();
+		busiPost.setBoardId(busiRepleVo.getBoardId());
+		busiPost.setPostSeq(busiRepleVo.getPostSeq());
+		busiPost.setParentpostId(busiRepleVo.getParentpostId());
+		busiPost.setPageIndex(busiRepleVo.getPageIndex());
+		busiPost.setRecordCountPerPage(busiRepleVo.getRecordCountPerPage());
+		busiPost.setSearchCondition(busiRepleVo.getSearchCondition());
+		busiPost.setSearchKeyword(busiRepleVo.getSearchKeyword());
+		model.addAttribute("busiPostVo", busiPost);
+		return "forward:/selectPost";
+	}
+	
+
+	
+	@RequestMapping(path="/deleteBusiReple", method= {RequestMethod.POST})
+	public String deleteBusiReple(BusiRepleVO busiRepleVo, Model model) {
+		logger.debug("삭제하는 놈 누구냐? : {}", busiRepleVo);
+		busiRepleVo.setRepleSt("N");
+		try {
+			busiBoardService.deleteBusiReple(busiRepleVo);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		BusiPostVO busiPost = new BusiPostVO();
+		busiPost.setBoardId(busiRepleVo.getBoardId());
+		busiPost.setPostSeq(busiRepleVo.getPostSeq());
+		busiPost.setParentpostId(busiRepleVo.getParentpostId());
+		busiPost.setPageIndex(busiRepleVo.getPageIndex());
+		busiPost.setRecordCountPerPage(busiRepleVo.getRecordCountPerPage());
+		busiPost.setSearchCondition(busiRepleVo.getSearchCondition());
+		busiPost.setSearchKeyword(busiRepleVo.getSearchKeyword());
+		model.addAttribute("busiPostVo", busiPost);
+		
+		return "forward:/selectPost";
+	}
+	
+}

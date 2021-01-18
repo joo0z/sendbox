@@ -1,0 +1,141 @@
+package kr.or.ddit.business.busiboard.service;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import javax.annotation.Resource;
+import javax.servlet.http.HttpSession;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
+
+import kr.or.ddit.business.busiboard.dao.BusiBoardMapperDao;
+import kr.or.ddit.business.busiboard.vo.BusiBoardVO;
+import kr.or.ddit.business.busiboard.vo.BusiFileVO;
+import kr.or.ddit.business.busiboard.vo.BusiPostVO;
+import kr.or.ddit.business.busiboard.vo.BusiRepleVO;
+import kr.or.ddit.comm.vo.PaginationVO;
+
+@Service("busiBoardService")
+public class BusiBoardService {
+	
+	
+	private static final Logger logger = LoggerFactory.getLogger(BusiBoardService.class);
+	
+	@Resource(name="busiBoardMapperDao")
+	private BusiBoardMapperDao busiBoard;
+	
+	public List<BusiBoardVO> selectBusiBoardList(BusiBoardVO busiBoardVO) throws Exception{
+		return busiBoard.selectBusiBoardList(busiBoardVO);
+	}
+	
+	public List<BusiPostVO> selectBusiPostList(BusiBoardVO busiBoardVo) throws Exception{
+		List<BusiPostVO> busiPostList = busiBoard.selectBusiPostList(busiBoardVo);
+		for (BusiPostVO busiPostVo : busiPostList) {
+			int cnt = busiBoard.selectFileTotCnt(busiPostVo);
+			busiPostVo.setFileCnt(cnt);
+		}
+		return busiPostList; 
+	}
+	
+	/**
+	 * 게시글의 아이디를 입력받아  게시글과 첨부파일 리스트 댓글 리스트를 가져오는 메서드
+	 * @param busiPostVo		게시글의 아이디를 담고있는 VO객체
+	 * @return					게시글, 파일리스트, 댓글리스트를 담고 있는 BusiPostVO 객체
+	 * @throws Exception
+	 */
+	public BusiPostVO selectBusiPostContent(BusiPostVO busiPostVo) throws Exception{
+		
+		
+		logger.debug("게시글 아이디 : {}", busiPostVo);
+		
+		Map<String, Object> postMap = new HashMap<String, Object>();
+		
+		/* 게시글 가져오기 */
+		BusiPostVO busiPost = busiBoard.selectBusiPost(busiPostVo);
+		logger.debug("**busiPost : {}",busiPost);
+		//postMap.put("busiPost", busiPost);
+		/* 첨부파일 리스트 가져오기 */
+		List<BusiFileVO> busiFileList = busiBoard.selectBusiFileList(busiPostVo);
+		
+		for (BusiFileVO busiFileVO : busiFileList) {
+			logger.debug("busiFileList : {}", busiFileVO);
+		}
+		
+		//postMap.put("busiFileList", busiFileList);
+		busiPost.setBusiFileList(busiFileList);
+		/* 댓글 리스트 가져오기 */
+		List<BusiRepleVO> busiRepleList = busiBoard.selectBusiRepleList(busiPostVo);
+		postMap.put("busiRepleList", busiRepleList);
+		busiPost.setBusiRepleList(busiRepleList);
+		
+		/*페이지 유지 자료*/
+		busiPost.setPageIndex(busiPostVo.getPageIndex());
+		busiPost.setPageUnit(busiPostVo.getPageUnit());
+		busiPost.setRecordCountPerPage(busiPostVo.getRecordCountPerPage());
+		
+		
+		
+		return busiPost;
+	}
+	
+	public BusiBoardVO selectBusiBoard(BusiBoardVO busiBoardVo) throws Exception{
+		return busiBoard.selectBusiBoard(busiBoardVo);
+	}
+	
+	public int insertBusiPost(BusiPostVO busiPostVo) throws Exception{
+		List<BusiFileVO> busiFileList = busiPostVo.getBusiFileList();
+		busiBoard.insertBusiPost(busiPostVo);
+		int fileCnt = 0;
+		if(busiFileList!= null && !busiFileList.isEmpty()) {
+			for (BusiFileVO busiFile : busiFileList) {
+				busiFile.setPostSeq(busiPostVo.getPostSeq());
+			}
+			fileCnt = busiBoard.insertBusiFileList(busiFileList);			
+		}
+		
+		return fileCnt;
+	}
+	
+	public BusiFileVO selectBusiFile(BusiFileVO busiFileVo) throws Exception{
+		return busiBoard.selectBusiFile(busiFileVo);
+	}
+	
+	public int insertBusiReple(BusiRepleVO busiRepleVo) throws Exception{
+		return busiBoard.insertBusiReple(busiRepleVo);
+	}
+	
+	public int deleteBusiReple(BusiRepleVO busiRepleVo) throws Exception{
+		return busiBoard.updateBusiReple(busiRepleVo);
+	}
+	
+	public int updateBusiPost(BusiPostVO busiPostVo) throws Exception{
+		int cnt = 0;
+		cnt = busiBoard.updateBusiPost(busiPostVo);
+		List<BusiFileVO> busiFileList = busiPostVo.getBusiFileList();
+		logger.debug("****busiFilelist : {}", busiFileList);
+		
+		if(busiFileList != null && !busiFileList.isEmpty()) {
+			for(BusiFileVO busiFile : busiFileList) {
+				busiFile.setPostSeq(busiPostVo.getPostSeq());
+			}
+			cnt = busiBoard.insertBusiFileList(busiFileList);			
+		}
+		List<BusiFileVO> delFileList = busiPostVo.getDelFileList();
+		if(delFileList != null && !delFileList.isEmpty()) {
+			cnt = busiBoard.deleteFileList(delFileList);			
+		}
+		return cnt;
+	}
+
+	public int deleteBusiPost(BusiPostVO busiPostVo) throws Exception {
+		return busiBoard.updateBusiPost(busiPostVo);
+		
+	}
+	
+	public int selectBusiPostTotCnt(BusiBoardVO busiBoardVo) throws Exception{
+		return busiBoard.selectBusiPostTotCnt(busiBoardVo);
+	}
+}

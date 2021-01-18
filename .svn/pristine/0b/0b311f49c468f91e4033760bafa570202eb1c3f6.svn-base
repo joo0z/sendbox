@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.business.library.dao.LibMapperDao">
+
+<select id="libList" parameterType="kr.or.ddit.business.library.vo.LibVO" resultType="kr.or.ddit.business.library.vo.LibVO">
+SELECT fileT.file_seq, fileT.file_real_nm, fileT.file_path, fileT.file_icon_id, fileT.emp_id, fileT.file_size, fileT.LIBRARY_ID, fileT.FILE_IN_DT,
+	        iconT.FILE_ICON_PATH, iconT.file_type
+	FROM (SELECT *
+	      FROM lib_file) fileT,    
+	     (SELECT *
+	      FROM file_icon) iconT
+	WHERE fileT.FILE_ICON_ID = iconT.FILE_ICON_ID(+)
+	AND fileT.FILE_ST = 'Y'
+	AND fileT.PAR_FILE_ID is null
+	<if test="libraryId!=null">
+		AND fileT.library_id = #{libraryId }
+	</if>
+	order by decode(file_icon_id,'folder',file_icon_id),file_seq desc
+</select>
+
+<select id="folderSearch" parameterType="kr.or.ddit.business.library.vo.LibVO" resultType="kr.or.ddit.business.library.vo.LibVO">
+SELECT fileT.file_seq, fileT.file_real_nm, fileT.file_path, fileT.file_icon_id,
+		   fileT.emp_id, fileT.file_size, fileT.LIBRARY_ID,
+	        iconT.FILE_ICON_PATH, iconT.file_type
+	        ,fileT.PAR_FILE_ID, fileT.file_in_dt
+	FROM (SELECT *
+	      FROM lib_file) fileT,    
+	     (SELECT *
+	      FROM file_icon) iconT
+	WHERE fileT.FILE_ICON_ID = iconT.FILE_ICON_ID(+)
+	AND fileT.FILE_ST = 'Y'
+	AND fileT.PAR_FILE_ID = #{fileSeq}
+    order by decode(file_icon_id,'folder',file_icon_id),file_seq desc
+</select>
+
+<select id="fileSelect" parameterType="kr.or.ddit.business.library.vo.LibVO" resultType="kr.or.ddit.business.library.vo.LibVO">
+	SELECT *
+	FROM lib_file
+	WHERE file_seq = #{fileSeq }
+</select>
+
+<select id="libSelect" parameterType="kr.or.ddit.business.library.vo.LibEmpVO" resultType="kr.or.ddit.business.library.vo.LibEmpVO">
+	select A.*
+		from library A, (select *
+		                  from dept
+						   <choose>
+						   	<when test="deptId == '0000'">
+						   		where dept_id = #{deptId} )B
+						   	</when>
+						   	<otherwise>
+						   		start with dept_id = #{deptId}
+						        connect by prior dept_id = upper_dept_id
+						        order siblings by dept_id)B
+						   	</otherwise>
+						   </choose>
+	where A.dept_id = B.dept_id
+</select>
+
+<insert id="fileUpload" parameterType="kr.or.ddit.business.library.vo.LibVO">
+	<choose>
+		<when test="parFileId != 0">
+		INSERT INTO lib_file ( file_seq, 
+							   library_id, 
+							   file_real_nm, 
+							   file_path, 
+							   file_icon_id, 
+							   file_in_dt, 
+							   file_st, 
+							   emp_id, 
+							   file_size, 
+							   file_folder, 
+							   par_file_id)
+			VALUES (file_seq.nextval, 
+				#{libraryId }, 
+				#{fileRealNm}, 
+				#{filePath}, 
+				#{fileIconId}, 
+				sysdate, 
+				'Y', 
+				#{empId}, 
+				#{fileSize}, 
+				#{fileFolder}, 
+				#{parFileId})
+		</when>
+		<when test="parFileId == 0">
+		INSERT INTO lib_file ( file_seq, 
+							   library_id, 
+							   file_real_nm, 
+							   file_path, 
+							   file_icon_id, 
+							   file_in_dt, 
+							   file_st, 
+							   emp_id, 
+							   file_size, 
+							   file_folder)
+			VALUES (file_seq.nextval, 
+				#{libraryId }, 
+				#{fileRealNm}, 
+				#{filePath}, 
+				#{fileIconId}, 
+				sysdate, 
+				'Y', 
+				#{empId}, 
+				#{fileSize}, 
+				#{fileFolder})
+		</when>
+	</choose>
+</insert>
+
+<update id="deleteFile" parameterType="kr.or.ddit.business.library.vo.LibVO">
+	UPDATE lib_file
+	   SET file_st = 'N'
+	 WHERE file_seq = #{fileSeq}
+</update>
+
+<insert id="folderUpload" parameterType="kr.or.ddit.business.library.vo.LibVO">
+	    <if test="parFileId != 0">
+	    INSERT INTO lib_file (file_seq, 
+							  library_id, 
+							  file_real_nm, 
+							  file_path, 
+							  file_icon_id,
+							  file_in_dt, 
+							  file_st, 
+							  emp_id, 
+							  file_folder, 
+							  par_file_id) 
+				VALUES (file_seq.nextval, 
+						#{libraryId}, 
+						#{fileRealNm}, 
+						#{filePath}, 
+						'folder',
+	    				sysdate, 
+	    				'Y', 
+	    				#{empId}, 
+	    				'D', 
+	    				#{parFileId})
+	    </if>
+	    <if test="parFileId == 0">
+	    INSERT INTO lib_file (file_seq, 
+							  library_id, 
+							  file_real_nm, 
+							  file_path, 
+							  file_icon_id,
+							  file_in_dt, 
+							  file_st, 
+							  emp_id, 
+							  file_folder) 
+				VALUES (file_seq.nextval, 
+						#{libraryId}, 
+						#{fileRealNm}, 
+						#{filePath}, 
+						'folder',
+	    				sysdate, 
+	    				'Y', 
+	    				#{empId}, 
+	    				'D')
+	    </if>
+</insert>
+
+<update id="fileChange" parameterType="kr.or.ddit.business.library.vo.LibVO">
+	UPDATE lib_file
+	    SET
+	        file_in_dt = sysdate
+	   		<if test="fileRealNm != null">
+	        ,file_real_nm = #{fileRealNm}
+	        </if>
+	        <if test="parFileId != 0">
+	        ,par_file_id = #{parFileId}
+	        </if>
+	WHERE
+	    file_seq = #{fileSeq}
+</update>
+ <select id="folderList"  parameterType="kr.or.ddit.business.library.vo.LibVO" resultType="kr.or.ddit.business.library.vo.LibVO">
+ 	SELECT * 
+	FROM lib_file
+	WHERE FILE_FOLDER = 'D'
+	AND file_st = 'Y'
+	AND PAR_FILE_ID is null
+	<if test="libraryId != null">
+		AND library_id = #{libraryId}
+	</if>
+	ORDER BY file_seq DESC
+ </select>
+
+<select id="libFileSize" parameterType="kr.or.ddit.business.library.vo.LibVO" resultType="String">
+	select sum(userfile.file_size) as allFileSize
+		from (select to_number(replace(file_size,'KB','')) as file_size
+		        from lib_file
+		        WHERE file_size IS NOT NULL
+		        AND FILE_ST = 'Y'
+		        AND LIBRARY_ID = #{libraryId}) userfile
+</select>
+
+<select id="libFileList" parameterType="kr.or.ddit.business.library.vo.LibVO" resultType="kr.or.ddit.business.library.vo.LibVO">
+	SELECT * 
+	FROM lib_file
+	WHERE FILE_FOLDER = 'F'
+	AND file_st = 'Y'
+	AND library_id = #{libraryId}
+	ORDER BY file_seq DESC
+</select>
+
+<select id="fileSearchList" parameterType="kr.or.ddit.business.library.vo.LibVO" resultType="kr.or.ddit.business.library.vo.LibVO">
+SELECT fileT.file_seq, fileT.file_real_nm, fileT.file_path, fileT.file_icon_id, fileT.emp_id, fileT.file_size, fileT.LIBRARY_ID, fileT.FILE_IN_DT,
+	        iconT.FILE_ICON_PATH, iconT.file_type
+	FROM (SELECT *
+	      FROM lib_file) fileT,    
+	     (SELECT *
+	      FROM file_icon) iconT
+where 
+	fileT.file_icon_id = iconT.file_icon_id
+	and fileT.library_id = #{libraryId}
+    and fileT.file_st = 'Y'
+    and fileT.file_folder = 'F'
+    and fileT.file_real_nm like '%' || #{searchKeyword} || '%'
+</select>
+
+</mapper>

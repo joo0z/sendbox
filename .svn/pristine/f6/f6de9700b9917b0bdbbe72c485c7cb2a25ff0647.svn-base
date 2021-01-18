@@ -1,0 +1,401 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+    pageEncoding="UTF-8"%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%> 
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
+<%@ taglib uri="http://java.sun.com/jsp/jstl/functions" prefix="fn" %>
+<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>Insert title here</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css"> -->
+<script type="text/javascript">
+
+$(document).ready(function(){
+	
+	var fileSeq = "";
+	var count = 0;
+	
+	$('input[name=realfilename]').change(function(ev) {
+// 		alert("작동");
+		$("#uploadForm").submit();
+	});
+	
+	
+	 if(${param.searchKeyword != ''}){
+	      $('#searched').val("${param.searchKeyword}")      
+	   }
+	 
+	 
+	$('#searchBtn').on('click',function(){
+	      var searched = $('#searched').val()
+	      var libraryId = $('#libraryId').val()
+	      location.href = "/folderSearch?searchKeyword="+searched + "&fileSeq=" + ${param.fileSeq};
+	   })
+	
+         
+	$('.img').on('click', function(){
+        $('.img').css('background-color','white');
+        $(this).css('background-color','lightgray');
+    })
+   
+    $('.img').mousedown(function() {
+     fileSeq = $(this).attr('fileSeq');
+   })
+
+   $('#delete').on('click',function(){
+      $.ajax({
+         url : '/deleteFile',
+         type : 'get',
+         data : { "fileSeq" : fileSeq},
+         success : function(res){
+//             alert(fileSeq);
+            window.location.reload();
+         },
+         error : function(xhr){
+             alert("상태 : " + xhr.status);
+          },
+          dataType : 'json'
+      })
+   })
+   
+  $('#down').on('click',function(){
+      if(fileSeq == ''){
+         alert("파일을 선택해 주세요.")
+      }else{
+         document.location="/libFileDownload?fileSeq="+fileSeq;
+      }
+   })
+  	
+   $('.folder').dblclick(function() { 
+		var fileSeq = "";
+		var fileSeq = $(this).attr('fileSeq');
+// 	   alert(fileSeq); 
+	   document.location="/folderSearch?fileSeq="+fileSeq;
+	});
+	
+	$('#nameChange').on('click', function() {
+		if (fileSeq == '') {
+			alert("파일을 선택해 주세요.")
+			$(this).attr('data-target','#noName');
+			return false;
+		} else {
+			$('#val').val(fileSeq);
+			$(this).attr('data-target','#name');
+			
+// 		document.location = "/fileChangeName?fileSeq=" + fileSeq;
+		}
+	})
+	
+  $('#copy').on('click',function(){
+	   if(fileSeq == ''){
+		   alert("복사할 파일을 선택해 주세요.")
+	   }else{
+	      $.ajax({
+	         url : '/copyFile',
+	         type : 'get',
+	         data : { "fileSeq" : fileSeq},
+	         success : function(res){
+	//             alert(fileSeq);
+	            window.location.reload();
+	         },
+	         error : function(xhr){
+	             alert("상태 : " + xhr.status);
+	          },
+	          dataType : 'json'
+	      })
+	   }
+   })
+   
+   $('#fileMove').on('click', function() {
+		if (fileSeq == '') {
+			alert("파일을 선택해 주세요.")
+			$(this).attr('data-target','#noName');
+		} else {
+			$('#valM').val(fileSeq);
+			$(this).attr('data-target','#move');
+			
+		}
+	})
+   
+});
+
+
+
+$(function () {
+	fileSeq = ${param.fileSeq}
+    $('#backFolder').dblclick(function () {
+//     	alert(fileSeq)
+    	$.ajax({
+         url : '/libBack',
+         type : 'post',
+         data : { "fileSeq" : fileSeq},
+         success : function(res){
+//             alert(fileSeq);
+        	 window.location.href = res.url;
+         },
+         error : function(xhr){
+             alert("상태 : " + xhr.status);
+          },
+          dataType : 'json'
+      })
+    });
+});
+
+
+</script>
+<style type="text/css">
+	td{
+	 padding: 20px;
+	}
+	.div1{
+		float:  left;
+		padding: 20px;
+	}
+	i{
+		margin-right: 5px;
+	}
+	
+	.img{
+		display: inline-block;
+		margin-left: 30px;
+		text-align: center;
+		margin-bottom: 30px;
+		width: 110px;
+    }
+    .btn-outline-secondary{
+    	border-color: white;
+    	
+    }
+
+</style>
+</head>
+<body>
+
+<div id="wrapper">
+	<!-- Content Wrapper -->
+	<div id="content-wrapper" class="d-flex flex-column">
+		<!-- Main Content -->
+		<div id="content">
+			<!-- Begin Page Content -->
+			<div class="container-fluid">
+				<!-- Page Heading -->
+				<h2 class="h3 mb-2 text-gray-800"><i class="fas fa-folder-open"></i>
+					자료실
+				</h2>
+				<br>
+				<!-- DataTales Example -->
+				<div class="card shadow mb-4">
+                        <div class="card-header py-3">
+                        </div>
+					<div class="card-body">
+								<!-- 검색  -->
+							<div id="dataTable_filter" class="dataTables_filter"
+								style="float: right;">
+								<i class="fas fa-search"></i>검색 : <label> <span>
+										<input placeholder="" type="search" id="searched"
+										class="form-control form-control-sm" aria-controls="dataTable">
+										</span>
+								</label> <input type="button" class="btn btn-outline-secondary"
+									value="검색" style="border-color: white;" id="searchBtn">
+							</div>
+							<div class="table-responsive" style="overflow: hidden;">
+<!-- 								리스트 이미지 보기 -->
+								<ul class="nav nav-tabs" style="border: white; float: right;">
+		  							<li class="nav-item" style="margin-left: 30px;">
+									<a class="nav-link active" data-toggle="tab" href="#imgView" style="border-color : white;">
+<!-- 										<i class="fas fa-th-large"></i> -->
+									</a>
+									</li>
+		  							<li class="nav-item" >
+									<a class="nav-link" data-toggle="tab" href="#listView" style="border-color : white;">
+<!-- 										<i class="fas fa-th-list"></i> -->
+									</a>
+									</li>
+								</ul>
+								<div class="row">
+									<div class="col-sm-15 col-md-9">
+										<div class="dataTables_length" id="dataTable_length">
+											<form action="/fileUpload" id="uploadForm" method="post" enctype="multipart/form-data">
+												<input type="file"name="realfilename" id="file" style="display:none"/>
+												<input type="hidden" name="parFileId" value="${libVO.fileSeq }">
+												<input type="hidden" name="libraryId" value="${vo.libraryId }">
+											</form>
+											<div class="btn btn-outline-secondary" onclick="onclick=document.all.file.click()">
+												<i class="fas fa-file-upload"></i>파일 업로드
+											</div>
+											<button type="button" class="btn btn-outline-secondary" data-toggle="modal" data-target="#myModal">
+												<i class="far fa-folder"></i>폴더 생성
+											</button>
+											<button class="btn btn-outline-secondary" id="down">
+												<i class="fas fa-file-download"></i>다운로드
+											</button>
+											<button class="btn btn-outline-secondary" id="delete">
+												<i class="far fa-trash-alt"></i>삭제
+											</button>
+											<button class="btn btn-outline-secondary" id="copy">
+												<i class="far fa-copy"></i>복사
+											</button>
+											<button class="btn btn-outline-secondary" id="fileMove" data-toggle="modal" data-target="#move">
+													<i class="fas fa-file-export"></i>이동
+												</button>
+											<button class="btn btn-outline-secondary" id="nameChange" data-toggle="modal" data-target="#name">
+												<i class="fas fa-file-export"></i>이름변경
+											</button>
+										</div>
+									</div>
+								</div>
+								</div>
+						</div>
+						
+			<div class="tab-content" style="margin-left: 40px;">
+				<br>
+				<div class="tab-pane fade show active"  id="imgView">
+					<div style="display: inline-block;" id="backFolder">
+						&nbsp;&nbsp;
+						<img  src="/images/back.png" class="type">
+						<br>&nbsp;
+					</div>
+					<c:forEach items="${folderList }" var="lib" varStatus="i">
+					
+						<div class="img ${lib.fileIconId }" fileSeq="${lib.fileSeq }" >
+							<c:choose>
+								<c:when test="${lib.fileIconId  == 'folder'}">
+									<img src="/images/${lib.fileType }.png" class="type" data-toggle="tooltip" data-placement="right" 
+										 title=" 생산자  : ${lib.empId }
+파일 타입 : folder	 
+작성일자  : <fmt:parseDate value="${lib.fileInDt }" pattern="yyyy-MM-dd HH:mm" var="date"/><fmt:formatDate value="${date}" pattern="yyyy-MM-dd HH:mm" />"><br>
+									 ${fn:substring(lib.fileRealNm,0,8) }
+								</c:when>
+								<c:when test="${lib.fileIconId  != null && lib.fileIconId != ''}">
+									<img src="/images/${lib.fileType }.png" class="type" data-toggle="tooltip" data-placement="right" 
+										 title="등록자 : ${lib.empId }
+파일 타입 : ${lib.fileIconId }
+파일크기  : ${lib.fileSize}  
+작성일자  : <fmt:parseDate value="${lib.fileInDt }" pattern="yyyy-MM-dd HH:mm" var="date"/><fmt:formatDate value="${date}" pattern="yyyy-MM-dd HH:mm" />"><br>
+									 ${fn:substring(lib.fileRealNm,0,8) }
+<%-- 										 ${lib.fileRealNm } --%>
+								</c:when>
+								<c:when test="${lib.fileIconId  == null || lib.fileIconId  == ''}">
+									<img src="/images/file.png" class="type"><br>
+									${lib.fileRealNm }
+								</c:when>
+							</c:choose>
+						</div>
+					</c:forEach>
+					
+				</div>
+			
+				
+				<div class="tab-pane fade" id="listView">
+					<div class="img">
+					<p>List View</p>
+					</div>
+				</div>
+		</div>
+
+
+					</div>
+			</div>
+			<!-- /.container-fluid -->
+
+		</div>
+		<!-- End of Main Content -->
+
+	</div>
+	<!-- End of Content Wrapper -->
+</div>
+
+<!-- 폴더 생성 모달 -->
+	<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+		<div class="modal-dialog" role="document">
+			<div class="modal-content">
+			<form action="/folderUpload">
+				<div class="modal-header">
+					<h5><strong>새 폴더</strong></h5>
+					<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+						<span aria-hidden="true">&times;</span>
+					</button>
+				</div>
+				<div class="modal-body">
+					<input type="text" placeholder="폴더명을 입력하세요" name="fileRealNm" style="width: 100%;" >
+					<input type="hidden" name="libraryId" value="${vo.libraryId }">
+					<input type="hidden" name="parFileId" value="${vo.fileSeq }">
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-default" data-dismiss="modal">닫기</button>
+					<button type="submit" class="btn btn-primary">만들기</button>
+				</div>
+			</form>
+			</div>
+		</div>
+	</div>
+
+<!-- 이름 변경 모달 -->
+	<div class="modal fade" id="name" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+		<div class="modal-dialog" role="document">
+			<div class="modal-content">
+			<form action="/fileChangeName">
+				<div class="modal-header">
+					<h5><strong>이름 변경</strong></h5>
+					<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+						<span aria-hidden="true">&times;</span>
+					</button>
+				</div>
+				<div class="modal-body">
+					<input type="text" name="fileRealNm" style="width: 100%;">
+					<input type="hidden" name="libraryId" value="NO">
+					<input type="hidden" name="fileSeq" value="" id="val">
+					<input type="hidden" name="parFileId" value="${libVO.fileSeq }">
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-default" data-dismiss="modal">닫기</button>
+					<button type="submit" class="btn btn-primary">변경</button>
+				</div>
+			</form>
+			</div>
+		</div>
+	</div>
+
+<!-- 파일 이동 모달 -->
+	<div class="modal fade" id="move" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+		<div class="modal-dialog" role="document">
+			<div class="modal-content">
+			<form action="/fileMove">
+				<div class="modal-header">
+					<h5><strong>파일 이동</strong></h5>
+					<button type="button" class="close" data-dismiss="modal" aria-label="Close">
+						<span aria-hidden="true">&times;</span>
+					</button>
+				</div>
+				<div class="modal-body" >
+					<div class="col-sm-7 input-group-sm" style="float: left;">
+					이동 경로 선택
+					<select name="parFileId" class="form-control">
+						<option value="0">자료실</option>
+						<c:forEach items="${folders}" var="folder">
+							<option value="${folder.fileSeq }">${folder.fileRealNm }</option>
+						</c:forEach>
+					</select> 
+					</div>
+					<input type="hidden" value="${vo.libraryId}" name="libraryId">
+					<input type="hidden" name="fileSeq" value="" id="valM">
+				</div>
+				<br>
+				<br>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-default" data-dismiss="modal">닫기</button>
+					<button type="submit" class="btn btn-primary">이동</button>
+				</div>
+			</form>
+			</div>
+		</div>
+	</div>
+
+
+
+</body>
+
+</html>

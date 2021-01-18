@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.findidpw.dao.FindIdPwMapper">
+	<select id="getEmp" resultType="kr.or.ddit.findidpw.vo.EmpVO" parameterType="kr.or.ddit.findidpw.vo.EmpVO">
+	SELECT
+		    emp_id,
+		    password,
+		    emp_nm,
+		    dept_id,
+		    manager_id,
+		    zipcode,
+		    addr1,
+		    addr2,
+		    emp_hp,
+		    emp_mail,
+		    bank_acct_no,
+		    emp_quit_yn,
+		    filepath,
+		    realfilename,
+		    auth_lv,
+		    jobtitle_id
+		FROM
+		    emp
+		<where>
+			<if test="empNm != null">
+				and emp_nm = #{empNm}
+			</if>
+			<if test="empHp != null">
+				and emp_hp = #{empHp}
+			</if>
+			<if test="empId != null">
+				and emp_id = #{empId}
+			</if>
+	</where>
+	</select>
+	
+	<update id="updatePass" parameterType="kr.or.ddit.findidpw.vo.EmpVO">
+	UPDATE emp
+	set password = #{password}
+	where emp_id = #{empId}
+	</update>
+	
+	
+</mapper>

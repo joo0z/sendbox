@@ -1,0 +1,124 @@
+package kr.or.ddit.business.busiboard.vo;
+
+import kr.or.ddit.comm.vo.BaseVO;
+
+public class BusiPostVO extends BaseVO {
+
+	private String regDt;
+	private String empId;
+	private String sessionEmpId;
+	private String empNm;
+	private String jobtitleNm;
+	private int postSeq;
+	private String title;
+	private String postSt;
+	private String content;
+	private String boardId;
+	private int parentpostId;
+	
+	public BusiPostVO() {
+	}
+	
+
+	public BusiPostVO(String regDt, String empId, String sessionEmpId, String empNm, String jobtitleNm, int postSeq,
+			String title, String postSt, String content, String boardId, int parentpostId) {
+		super();
+		this.regDt = regDt;
+		this.empId = empId;
+		this.sessionEmpId = sessionEmpId;
+		this.empNm = empNm;
+		this.jobtitleNm = jobtitleNm;
+		this.postSeq = postSeq;
+		this.title = title;
+		this.postSt = postSt;
+		this.content = content;
+		this.boardId = boardId;
+		this.parentpostId = parentpostId;
+	}
+
+
+
+
+
+
+	public String getSessionEmpId() {
+		return sessionEmpId;
+	}
+
+
+	public void setSessionEmpId(String sessionEmpId) {
+		this.sessionEmpId = sessionEmpId;
+	}
+
+
+	public String getEmpNm() {
+		return empNm;
+	}
+
+
+	public void setEmpNm(String empNm) {
+		this.empNm = empNm;
+	}
+
+
+	public String getJobtitleNm() {
+		return jobtitleNm;
+	}
+
+
+	public void setJobtitleNm(String jobtitleNm) {
+		this.jobtitleNm = jobtitleNm;
+	}
+
+
+	public int getPostSeq() {
+		return postSeq;
+	}
+	public void setParentpostId(int parentpostId) {
+		this.parentpostId = parentpostId;
+	}
+	public int getParentpostId() {
+		return parentpostId;
+	}
+	public void setPostSeq(int postSeq) {
+		this.postSeq = postSeq;
+	}
+	public void setRegDt(String regDt) {
+		this.regDt = regDt; 
+	}
+	public String getRegDt() {
+		return regDt; 
+	}
+	public void setEmpId(String empId) {
+		this.empId = empId; 
+	}
+	public String getEmpId() {
+		return empId; 
+	}
+	public void setTitle(String title) {
+		this.title = title; 
+	}
+	public String getTitle() {
+		return title; 
+	}
+	public void setPostSt(String postSt) {
+		this.postSt = postSt; 
+	}
+	public String getPostSt() {
+		return postSt; 
+	}
+	public void setContent(String content) {
+		this.content = content; 
+	}
+	public String getContent() {
+		return content; 
+	}
+	public void setBoardId(String boardId) {
+		this.boardId = boardId; 
+	}
+	public String getBoardId() {
+		return boardId; 
+	}
+	
+	
+}

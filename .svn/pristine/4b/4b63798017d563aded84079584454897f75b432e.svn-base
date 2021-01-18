@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+
+<mapper namespace="kr.or.ddit.businessTree.dao.BusinessTreeMapperDao">
+
+
+
+
+
+	<select id="selectBusinessTreeList" resultType="kr.or.ddit.businessTree.vo.BusinessTreeVO">
+		SELECT dept.dept_name as dept_name, 
+		       emp.emp_id as emp_id, 
+		       emp.emp_nm as emp_nm, 
+		       dept.dept_id as dept_id, 
+		       dept.upper_dept_id as upper_dept_id, 
+		       (select jobT.jobtitle_nm from job_title jobT where jobT.jobtitle_id = emp.jobtitle_id) as jobtitle,
+		       (select jobT.jobtitle_id from job_title jobT where jobT.jobtitle_id = emp.jobtitle_id) as jobtitle_id
+		FROM dept, (SELECT emp_id, emp_nm, dept_id, jobtitle_id
+		            FROM emp
+		            START WITH manager_id is null
+		            CONNECT by prior emp_id = manager_id
+		            ORDER SIBLINGS BY dept_id) emp
+		WHERE dept.dept_id = emp.dept_id
+	</select>
+	
+	
+	
+	
+</mapper>

@@ -1,0 +1,267 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.dept.dao.DeptMapperDao">
+
+	<select id="selectDeptTreeList" resultType="kr.or.ddit.dept.vo.DeptVO">
+		SELECT DEPT_ID,
+			   UPPER_DEPT_ID,
+			   DEPT_HEAD_ID,
+			   DEPT_NAME
+		FROM dept
+		START WITH UPPER_DEPT_ID is null
+		CONNECT by prior dept_id = UPPER_DEPT_ID
+		ORDER SIBLINGS BY dept_id
+	</select>
+
+
+	<select id="selectAllEmpList" resultType="kr.or.ddit.emp.vo.EmpVO">
+		SELECT emp_id,
+			   dept_id,
+			   manager_id,
+			   jobtitle_id,
+			   password,
+			   emp_nm,
+			   zipcode,
+			   addr1,
+			   addr2,
+			   emp_hp,
+			   emp_mail,
+			   bank_acct_no,
+			   emp_quit_yn,
+			   filepath,
+			   realfilename,
+			   auth_lv
+		FROM emp
+		ORDER BY dept_id, emp_id
+	</select>
+
+
+
+
+
+
+
+
+	<select id="selectEmpJobInfo" parameterType="kr.or.ddit.jobTitle.vo.JobTitleVO" resultType="kr.or.ddit.jobTitle.vo.JobTitleVO">
+		SELECT JOBTITLE_ID,
+			   JOBTITLE_NM
+		FROM JOB_TITLE
+		WHERE JOBTITLE_ID = (SELECT JOBTITLE_ID
+	                         FROM EMP
+	                         WHERE EMP_ID = #{empId})
+	</select>
+	
+	
+	
+	
+	
+	
+	
+	
+	<select id="selectEmpDeptInfo" parameterType="kr.or.ddit.dept.vo.DeptVO" resultType="kr.or.ddit.dept.vo.DeptVO">
+		SELECT DEPT_ID,
+			   UPPER_DEPT_ID,
+			   DEPT_HEAD_ID,
+			   DEPT_NAME
+		FROM DEPT
+		WHERE DEPT_ID = #{deptId}
+	</select>
+
+
+
+
+
+
+
+	<select id="selectBusinessTreeList" resultType="kr.or.ddit.businessTree.vo.BusinessTreeVO">
+		SELECT dept.dept_name as dept_name, 
+		       emp.emp_id as emp_id, 
+		       emp.emp_nm as emp_nm, 
+		       dept.dept_id as dept_id, 
+		       dept.upper_dept_id as upper_dept_id, 
+		       (select jobT.jobtitle_nm from job_title jobT where jobT.jobtitle_id = emp.jobtitle_id) as jobtitle,
+		       (select jobT.jobtitle_id from job_title jobT where jobT.jobtitle_id = emp.jobtitle_id) as jobtitle_id
+		FROM dept, (SELECT emp_id, emp_nm, dept_id, jobtitle_id
+		            FROM emp
+		            START WITH manager_id is null
+		            CONNECT by prior emp_id = manager_id
+		            ORDER SIBLINGS BY dept_id) emp
+		WHERE dept.dept_id = emp.dept_id
+	</select>
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	<select id="selectUpperDeptInfo" parameterType="kr.or.ddit.dept.vo.DeptVO" resultType="kr.or.ddit.dept.vo.DeptVO">
+		SELECT DEPT_ID,
+			   UPPER_DEPT_ID,
+			   DEPT_HEAD_ID,
+			   DEPT_NAME
+		FROM DEPT
+		WHERE DEPT_ID = #{upperDeptId}
+	</select>
+
+
+
+
+
+
+	<insert id="insertDeptInfo" parameterType="kr.or.ddit.dept.vo.DeptVO">
+		<selectKey keyProperty="deptId" keyColumn="dept_id" resultType="kr.or.ddit.dept.vo.DeptVO" order="AFTER">
+			SELECT LPAD(dept_seq.currval, 4, '0') as dept_id
+			FROM DUAL
+		</selectKey>
+		INSERT INTO dept (dept_id,
+						  upper_dept_id,
+						  dept_head_id,
+						  dept_name) 
+				VALUES (LPAD(dept_seq.nextval, 4, '0'),
+						#{upperDeptId},
+						#{deptHeadId},
+						#{deptName})
+	</insert>
+	
+	
+	
+	
+	<insert id="insertBusiBoard" parameterType="kr.or.ddit.business.busiboard.vo.BusiBoardVO">
+		INSERT INTO busi_board (board_id,
+							    board_nm,
+							    dept_id) 
+				VALUES (LPAD(BUSI_BOARD_SEQ.nextval, 4, '0'),
+						#{boardNm},
+						#{deptId})
+	</insert>
+
+
+
+
+
+
+	<select id="selectEmpInfo" parameterType="kr.or.ddit.emp.vo.EmpVO" resultType="kr.or.ddit.emp.vo.EmpVO">
+		SELECT emp_id,
+			   dept_id,
+			   manager_id,
+			   jobtitle_id,
+			   password,
+			   emp_nm,
+			   zipcode,
+			   addr1,
+			   addr2,
+			   emp_hp,
+			   emp_mail,
+			   bank_acct_no,
+			   emp_quit_yn,
+			   filepath,
+			   realfilename,
+			   auth_lv
+		FROM emp
+		WHERE emp_id = #{empId}
+	</select>
+
+
+
+
+
+
+
+
+
+	<update id="updateEmpHistoryInfo" parameterType="kr.or.ddit.emp.vo.EmpHistoryVO">
+		<selectKey keyProperty="empHisSeq" resultType="kr.or.ddit.emp.vo.EmpHistoryVO" order="BEFORE">
+			SELECT max(emp_his_seq) as emp_his_seq
+			FROM emp_history
+			WHERE emp_id = #{empId}
+		</selectKey>
+		<choose>
+			<when test="empHisSeq != null">
+				UPDATE emp_history
+			    SET
+			        end_dt = SYSDATE,
+			        upd_dt = SYSDATE
+				WHERE
+				    emp_his_seq = #{empHisSeq}
+			</when>
+			<otherwise>
+				UPDATE emp_history
+			    SET
+			        end_dt = SYSDATE,
+			        upd_dt = SYSDATE
+				WHERE
+				    emp_his_seq = 0
+			</otherwise>
+		</choose>
+	</update>
+
+
+
+
+
+
+
+	<insert id="insertEmpHistoryInfo" parameterType="kr.or.ddit.emp.vo.EmpHistoryVO">
+		INSERT INTO emp_history (emp_his_seq,
+								 emp_id,
+								 dept_id,
+								 jobtitle_id,
+								 start_dt,
+								 end_dt,
+								 upd_dt,
+								 manager_id,
+								 auth_lv) 
+				VALUES (EMP_HIS_SEQ.nextval,
+						#{empId},
+						#{deptId},
+						#{jobtitleId},
+						SYSDATE,
+						SYSDATE,
+						SYSDATE,
+						#{managerId},
+						#{authLv})
+	</insert>
+	
+	
+	
+	
+	
+	
+	
+	<update id="updateEmpInfo" parameterType="kr.or.ddit.emp.vo.EmpVO">
+		UPDATE emp
+		    SET
+		        manager_id = #{managerId},
+				jobtitle_id = #{jobtitleId},
+				auth_lv = #{authLv},
+				dept_id = #{deptId}
+		WHERE
+		    emp_id = #{empId}
+	</update>
+	
+	
+	
+	
+	
+	
+	
+	
+
+	<insert id="insertBusiLibrary" parameterType="kr.or.ddit.business.library.vo.LibEmpVO">
+		INSERT INTO library (library_id,
+						     dept_id,
+						     library_nm) 
+		    	VALUES (LPAD(BUSI_LIB_SEQ.nextval, 4, '0'),
+		    			#{deptId},
+		    			#{libraryNm})
+	</insert>
+
+
+
+
+
+</mapper>

@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.vacation.dao.VacationMapperDao">
+
+
+	<select id="selectEmpVacateInfo" parameterType="kr.or.ddit.vacation.vo.VacationVO" resultType="kr.or.ddit.vacation.vo.VacationVO">
+		<choose>
+			<when test="yearInfo != null and !''.equals(yearInfo)">
+				SELECT vacA.*
+				FROM (SELECT vacate_seq,
+							 vacate_type_name,
+						     emp_id, 
+					         vacate_start_dt, 
+					         vacate_end_dt, 
+					         vacate_type_seq, 
+					         vacate_reason, 
+					         vacate_day_cnt
+					  FROM VACATION
+					  WHERE emp_id = #{empId}
+					  AND TO_CHAR(VACATE_START_DT, 'YYYY') = #{yearInfo}) vacA
+				ORDER BY vacate_seq DESC
+			</when>
+			<otherwise>
+				SELECT vacA.*
+				FROM (SELECT distinct vacate_seq, 
+							 vacate_type_name,
+				             emp_id, 
+				             to_char(vacate_start_dt, 'yyyy-MM-dd') as vacate_start_dt, 
+				             to_char(vacate_end_dt, 'yyyy-MM-dd') as vacate_end_dt, 
+				             vacate_type_seq, 
+				             vacate_reason,
+				             vacate_day_cnt
+				      FROM VACATION
+				      WHERE emp_id = #{empId}
+				      AND TO_CHAR(VACATE_START_DT, 'YYYY') = TO_CHAR(SYSDATE, 'YYYY')) vacA
+				ORDER BY vacate_seq DESC
+			</otherwise>
+		</choose>
+	</select>
+	
+	
+	
+	
+	
+	
+	
+	
+	<select id="selectVacatTypeList" parameterType="kr.or.ddit.vacation.vo.VacatTypeVO" resultType="kr.or.ddit.vacation.vo.VacatTypeVO">
+		SELECT vacate_type_seq,
+			   vacate_type_code,
+			   vacate_type_name,
+			   vacate_type_manual,
+			   vacate_type_day_cnt
+		FROM vacate_type
+	</select>
+	
+	
+	
+	
+	
+	
+	
+
+
+
+
+
+	<select id="selectEmpJobTitleVacateDayCnt" parameterType="kr.or.ddit.emp.vo.EmpVO" resultType="int">
+		SELECT job_vacate_day
+		FROM job_vacate
+		WHERE jobtitle_id = (SELECT jobtitle_id 
+		                     FROM emp 
+		                     WHERE emp_id = #{empId})
+	</select>
+
+
+
+
+
+	<select id="selectYearStrList" resultType="java.lang.String">
+		SELECT level
+		FROM dual
+		WHERE level >= to_number(to_char(sysdate, 'yyyy')) - 50
+		CONNECT BY level <![CDATA[ <= ]]> to_number(to_char(sysdate, 'yyyy'))
+	</select>
+
+
+	
+
+	
+
+
+
+
+
+	<select id="selectVacatType" parameterType="kr.or.ddit.vacation.vo.VacatTypeVO" resultType="kr.or.ddit.vacation.vo.VacatTypeVO">
+		SELECT
+		    vacate_type_seq,
+		    vacate_type_code,
+		    vacate_type_name,
+		    vacate_type_manual,
+		    vacate_type_day_cnt
+		FROM
+		    vacate_type
+		<where>
+			<if test="vacateTypeCode != null and vacateTypeCode != ''">
+				and vacate_type_code = #{vacateTypeCode}
+			</if>
+		</where>    
+	</select>
+
+
+
+
+
+	<select id="selectIsInsertVacateInfo" parameterType="kr.or.ddit.vacation.vo.VacationVO" resultType="kr.or.ddit.vacation.vo.VacationVO">
+		SELECT vacate_seq,
+		       emp_id,
+		       vacate_type_seq,
+		       vacate_start_dt,
+		       vacate_end_dt,
+		       vacate_reason,
+		       vacate_day_cnt,
+		       vacate_type_name
+		FROM vacation
+		WHERE emp_id = #{empId}
+		AND SUBSTR(to_char(vacate_start_dt), 4, 2) = SUBSTR(#{vacateStartDt}, 6, 2)
+		AND vacate_type_seq = 1
+	</select>
+	
+	
+	
+	
+</mapper>

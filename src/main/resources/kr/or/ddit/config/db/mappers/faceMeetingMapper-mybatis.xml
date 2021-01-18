@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.facemeeting.dao.FaceMeetingMapperDao">
+
+	<select id="selectEmpJobTitleName" parameterType="kr.or.ddit.emp.vo.EmpVO" resultType="String">
+		SELECT
+		    jobtitle_nm
+		FROM
+		    job_title
+		WHERE
+			jobtitle_id = #{jobtitleId}
+	</select>
+
+
+</mapper>

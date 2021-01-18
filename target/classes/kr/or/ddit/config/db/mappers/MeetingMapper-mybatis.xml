@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.business.meeting.dao.MeetingMapperDao">
+
+<select id="getMeeting" resultType="kr.or.ddit.business.meeting.vo.MeetingVO">
+SELECT
+    A.reserv_seq,
+    A.meetroom_id,
+    B.dept_name as dept_id,
+    A.reserv_start_dt,
+    A.reserv_end_dt,
+    A.gubun,
+    A.start_time,
+    A.end_time
+FROM
+    (select * from mt_rm_res) A, (select * from dept) B
+WHERE A.dept_id = B.dept_id
+ORDER BY A.reserv_start_dt asc, A.start_time asc, A.meetroom_id asc
+</select>
+
+<select id="checkMeeting" parameterType="kr.or.ddit.business.meeting.vo.MeetingVO" resultType="java.lang.Integer">
+<![CDATA[
+		select
+			count(*) 
+		from
+			mt_rm_res 
+		where
+		to_char(reserv_start_dt,'YYYY-MM-DD') = #{reservStartDt}  and MEETROOM_ID = #{meetroomId} and
+			start_time < #{endTime}
+			and
+		end_time > #{startTime}
+	]]>
+</select>
+
+<insert id="addMeeting" parameterType="kr.or.ddit.business.meeting.vo.MeetingVO">
+INSERT INTO mt_rm_res (
+    reserv_seq,
+    meetroom_id,
+    dept_id,
+    reserv_start_dt,
+    reserv_end_dt,
+    gubun,
+    start_time,
+    end_time
+) VALUES (
+    RESERV_SEQ.nextval,
+    #{meetroomId},
+    #{deptId},
+    TO_DATE(#{reservStartDt}||#{startTime},'YYYY-MM-DD HH24:mi'),
+    TO_DATE(#{reservStartDt}||#{endTime},'YYYY-MM-DD HH24:mi'),
+    'Y',
+    #{startTime},
+    #{endTime}
+)
+</insert>
+
+<select id="selectMeeting" parameterType="kr.or.ddit.business.meeting.vo.MeetingVO" resultType="kr.or.ddit.business.meeting.vo.MeetingVO">
+	SELECT
+    reserv_seq,
+    meetroom_id,
+    B.dept_name as dept_id,
+    to_char(reserv_start_dt,'YYYY-MM-DD') as reserv_start_dt,
+    to_char(reserv_end_dt,'YYYY-MM-DD') as reserv_end_dt,
+    gubun,
+    start_time,
+    end_time
+FROM
+    (select * from mt_rm_res) A, (select * from dept) B
+    where A.dept_id = B.dept_id
+<!--     <where> -->
+<!-- 		<if test="reservSeq != null"> -->
+		and reserv_seq =  #{reservSeq}
+<!-- 		</if> -->
+<!-- 	</where> -->
+</select>
+
+<delete id="deleteMeeting" parameterType="kr.or.ddit.business.meeting.vo.MeetingVO">
+	DELETE FROM mt_rm_res
+	<where>
+		<if test="reservSeq != null">
+		and reserv_seq = #{reservSeq}
+		</if>
+	</where>
+</delete>
+
+<update id="updateMeeting" parameterType="kr.or.ddit.business.meeting.vo.MeetingVO">
+	UPDATE mt_rm_res
+    SET
+    meetroom_id = #{meetroomId},
+    reserv_start_dt =TO_DATE(#{reservStartDt},'YYYY-MM-DD HH24:mi'),
+    reserv_end_dt = TO_DATE(#{reservEndDt},'YYYY-MM-DD HH24:mi'),
+    start_time = #{startTime},
+    end_time = #{endTime}
+	<where>
+		<if test="reservSeq != null">
+		and reserv_seq =  #{reservSeq}
+		</if>
+	</where>
+</update>
+<select id="revMeeting" resultType="kr.or.ddit.business.meeting.vo.MeetingVO">
+SELECT
+    reserv_seq,
+    meetroom_id,
+    dept_id,
+    to_char(reserv_start_dt,'YYYY-MM-DD') as reserv_start_dt,
+    to_char(reserv_end_dt,'YYYY-MM-DD') as reserv_end_dt,
+    gubun,
+    start_time,
+    end_time
+FROM
+    mt_rm_res
+    order by meetroom_id asc ,  
+    RESERV_START_DT asc
+</select>
+
+<select id="usingMR" resultType="kr.or.ddit.business.meeting.vo.MeetingVO" parameterType="java.lang.String">
+	select * from mt_rm_res
+	where TO_CHAR(reserv_start_dt,'YYYY-MM-DD') = TO_CHAR(SYSDATE,'YYYY-MM-DD')
+	  and TO_CHAR(SYSDATE,'HH24:MI') BETWEEN START_TIME AND END_TIME
+	  and meetroom_id = #{meetroomId}
+</select>
+
+<select id="allMR" resultType="kr.or.ddit.business.meeting.vo.UsingVO">
+	select meetroom_id, meetroom_nm from mt_Rm
+</select>
+	
+</mapper>

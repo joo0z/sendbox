@@ -1,0 +1,229 @@
+package kr.or.ddit.chat.controller;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.annotation.Resource;
+import javax.servlet.http.HttpSession;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import kr.or.ddit.chat.service.ChatService;
+import kr.or.ddit.chat.vo.ChatInfoVO;
+import kr.or.ddit.chat.vo.ChatRoomVO;
+import kr.or.ddit.emp.vo.EmpVO;
+
+@Controller
+public class ChatController {
+
+	
+	@Resource(name = "chatService")
+	private ChatService chatService;
+	
+	private static final Logger logger = LoggerFactory.getLogger(ChatController.class);
+	
+	
+	@RequestMapping("/chat/mychatList")
+	public String mychatList(ChatRoomVO chatRoomVO, Model model,
+							 @RequestParam(name="chatRoomName", required=false) String chatRoomName) {
+		
+		if(chatRoomName != null && !chatRoomName.equals("")) {
+			chatRoomVO.setChatrmNm(chatRoomName);
+		}
+		
+		try {
+			List<ChatRoomVO> chatRoomList = chatService.selectChatRoomList(chatRoomVO);
+			model.addAttribute("chatRoomList", chatRoomList);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return "jsonView";
+	}
+	
+	
+	
+	
+	
+	
+	@RequestMapping("/chat/chatInfoList")
+	public String chatInfoList(ChatInfoVO chatInfoVO, Model model, HttpSession session) {
+		try {
+			List<ChatInfoVO> chatInfoList = chatService.selectChatInfoList(chatInfoVO);
+			
+			logger.debug("chatInfoList.get(0) : {}", chatInfoList.get(0));
+			model.addAttribute("chatInfoList", chatInfoList);
+			
+			// 방 정보 세션에 저장
+			session.setAttribute("chatrmId", chatInfoList.get(0).getChatrmId());
+
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return "jsonView";
+	}
+	
+	
+	
+	
+	
+	
+	@RequestMapping("/chat/insertChatInfo")
+	public String insertChatInfo(ChatInfoVO chatInfoVO, HttpSession session) {
+		
+		EmpVO empVO = (EmpVO) session.getAttribute("EMP");
+		String chatrmId = (String) session.getAttribute("chatrmId");
+		
+		chatInfoVO.setChatCont(chatInfoVO.getChatCont().replace("\n", "<br>"));
+		
+		chatInfoVO.setEmpId(empVO.getEmpId());
+		chatInfoVO.setEmpNm(empVO.getEmpNm());
+		chatInfoVO.setChatrmId(chatrmId);
+		
+		logger.debug("chatInfoVO : {}", chatInfoVO);
+		
+		int insertChatInfoRes = 0;
+		try {
+			insertChatInfoRes = chatService.insertChatInfo(chatInfoVO);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+		if(insertChatInfoRes == 1) {
+			return "jsonView";
+		}else {
+			return "redirect:/chat/insertChatInfo";
+		}
+	}
+	
+	
+	
+	
+	
+	@RequestMapping("/chat/showAddrList")
+	public String showAddrList(Model model, HttpSession session) {
+		
+		EmpVO sessionEmp = (EmpVO) session.getAttribute("EMP");
+		try {
+			List<EmpVO> empList = chatService.selectEmpList();
+			List<String> dbEmpNameList = null;
+			if(empList != null && empList.size() > 0) {
+				dbEmpNameList = new ArrayList<String>();
+				for(EmpVO dbEmp : empList) {
+					// 로그인한 사원을 제외한 모든 사원의 정보를 리스트에 추가
+					if(!sessionEmp.getEmpId().equals(dbEmp.getEmpId())) {
+						dbEmpNameList.add(dbEmp.getEmpId()+":+:"+dbEmp.getEmpNm());
+					}
+				}
+				model.addAttribute("dbEmpNameList", dbEmpNameList);
+			}
+			model.addAttribute("empList", empList);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return "chat/showChatAddr";
+	}
+	
+	
+	
+	
+	
+	@RequestMapping("/chat/createChatRoom")
+	public String createChatRoom(@RequestParam(name = "empIdArr[]") List<String> empIdArr, 
+								 @RequestParam(name = "empNmArr[]") List<String> empNmArr, 
+								 HttpSession session, ChatRoomVO chatRoomVO) {
+		
+		logger.debug("empIdArr : {}", empIdArr);
+		EmpVO empVO = (EmpVO) session.getAttribute("EMP");
+		
+		// 방 생성
+		int createChatRoomRes = chatService.createChatRoom(empVO, empIdArr, empNmArr, chatRoomVO);
+		if(createChatRoomRes == 1) {
+			return "jsonView";
+		}else {
+			return "";
+		}
+	}
+	
+	
+	
+	
+	
+	
+	
+	
+	@RequestMapping("/chat/showAddEmpList")
+	public String showAddEmpList(String chatRoomId, Model model, HttpSession session) {
+		
+		EmpVO sessionEmp = (EmpVO) session.getAttribute("EMP");
+		try {
+			List<EmpVO> AddEmpList = chatService.selectAddChatRoomEmpList(chatRoomId);
+			List<String> dbEmpNameList = null;
+			if(AddEmpList != null && AddEmpList.size() > 0) {
+				dbEmpNameList = new ArrayList<String>();
+				for(EmpVO dbEmp : AddEmpList) {
+					// 로그인한 사원을 제외한 모든 사원의 정보를 리스트에 추가
+					if(!sessionEmp.getEmpId().equals(dbEmp.getEmpId())) {
+						dbEmpNameList.add(dbEmp.getEmpId()+":+:"+dbEmp.getEmpNm());
+					}
+				}
+				model.addAttribute("dbEmpNameList", dbEmpNameList);
+			}
+			
+			model.addAttribute("empList", AddEmpList);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return "chat/chatAddEmp";
+	}
+	
+	
+	
+	
+	
+	@RequestMapping("/chat/inviteChatEmp")
+	public String inviteChatEmp(@RequestParam(name = "empIdArr[]") List<String> empIdArr,
+								@RequestParam(name = "empNmArr[]") List<String> empNmArr,
+								String chatRoomId) {
+		
+		int insertChatInfoRes = chatService.insertInviteChatEmp(empIdArr, empNmArr, chatRoomId);
+		if(insertChatInfoRes == 1) {
+			return "jsonView";
+		}else {
+			return "redirect:/chat/showAddEmpList";
+		}
+	}
+	
+	
+	
+	
+	@RequestMapping("/chat/delChatInfoEmp")
+	public String delChatInfoEmp(ChatInfoVO chatInfo, HttpSession session, Model model) {
+		
+		EmpVO empVO = (EmpVO) session.getAttribute("EMP");
+		chatInfo.setEmpId(empVO.getEmpId());
+		chatInfo.setEmpNm(empVO.getEmpNm());
+		try {
+			int delChatInfoEmpRes = chatService.updateChatInfoEmp(chatInfo);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return "jsonView";
+	}
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+}

@@ -1,0 +1,267 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.or.ddit.freeboard.dao.FreeBoardMapperDao">
+
+	<select id="selectListFreePost" parameterType="kr.or.ddit.freeboard.vo.FreeBoardVO" resultType="kr.or.ddit.freeboard.vo.FreeBoardVO">
+		SELECT a. *
+		FROM (SELECT rownum as rn,
+			    	 post_seq,
+				     emp_id,
+				     emp_nm,
+				     title,
+				     cont,
+				     reg_dt,
+				     upd_dt,
+				     post_st
+				FROM freeboard
+				<where>
+					<if test="searchCondition != null and !''.equals(searchCondition) and 
+		              searchKeyword != null and !''.equals(searchKeyword)">
+		         		and ${searchCondition} like '%' || #{searchKeyword} || '%'
+		      		</if>
+				</where>
+				ORDER BY post_seq DESC) a
+	WHERE rn between (#{pageIndex}-1) * #{recordCountPerPage} + 1 and #{pageIndex} * #{recordCountPerPage}
+	</select>
+	
+	
+	
+	<select id="selectFreeBoard" parameterType="kr.or.ddit.freeboard.vo.FreeBoardVO" resultType="kr.or.ddit.freeboard.vo.FreeBoardVO">
+		SELECT post_seq,
+			   emp_id,
+			   emp_nm,
+			   title,
+		       cont,
+			   reg_dt,
+			   upd_dt,
+			   post_st
+		FROM freeboard
+		WHERE post_seq = #{postSeq}
+	</select>
+
+
+
+
+	<select id="selectListFreeBoardFile" parameterType="kr.or.ddit.freeboard.vo.FreeFileVO" resultType="kr.or.ddit.freeboard.vo.FreeFileVO">
+		SELECT
+		    attachfile_seq,
+		    post_seq,
+		    filepath,
+		    realfilename
+		FROM
+		    free_file
+		<where>
+			<if test="postSeq != ''">
+				AND post_seq = #{postSeq} AND attachfile_st = 'Y'
+			</if>
+			<if test="attachfileSeq != ''">
+				AND attachfile_seq = #{attachfileSeq}
+			</if>
+		</where>
+	</select>
+	
+	
+
+	<insert id="insertFreeBoard" parameterType="kr.or.ddit.freeboard.vo.FreeBoardVO">
+		INSERT INTO freeboard (
+					 post_seq
+				   , emp_id
+				   , emp_nm
+				   , title
+				   , cont
+				   , reg_dt
+				   , upd_dt
+				   , post_st
+		)  VALUES (
+					 FREE_POST_SEQ.nextval
+				   , #{empId}
+				   , #{empNm}
+				   , #{title}
+				   , #{cont}
+				   , SYSDATE
+				   , SYSDATE
+				   , 'Y'
+				   
+		)
+	</insert>
+	
+	
+	
+	
+	<insert id="insertFreeBoardFile" parameterType="kr.or.ddit.freeboard.vo.FreeFileVO">
+		INSERT INTO free_file (attachfile_seq,
+							    post_seq,
+							    filepath,
+							    realfilename,
+							    attachfile_st) 
+					   VALUES (
+					    FREE_ATTACHFILE_SEQ.NEXTVAL,
+					    <choose>
+					    	<when test="postSeq == ''">
+					    		FREE_POST_SEQ.CURRVAL,
+					    	</when>
+					    	<otherwise>
+					    		#{postSeq},					    	
+					    	</otherwise>
+					    </choose>
+					    #{filepath},
+					    #{realfilename},
+					    'Y')
+	</insert>
+	
+	
+	
+	
+	<select id="selectCurrval" resultType="int">
+		SELECT FREE_POST_SEQ.CURRVAL
+		FROM dual
+	</select>
+	
+	
+	
+	
+	
+	
+	
+	
+	<update id="updateFreeBoard" parameterType="kr.or.ddit.freeboard.vo.FreeBoardVO">
+		UPDATE freeboard
+		    SET
+	        <choose>
+	        	<when test="postSt != null">
+		        	title = #{title},
+			        reg_dt = SYSDATE,
+	        		post_st = #{postSt}
+	        	</when>
+	        	<otherwise>
+	        		title = #{title},
+			        cont = #{cont},
+			        reg_dt = SYSDATE
+	        	</otherwise>
+	        </choose>
+		WHERE emp_id = #{empId}
+		AND post_seq = #{postSeq}
+
+
+<!-- 		UPDATE freeboard -->
+<!-- 		    SET -->
+<!-- 			    title = #{title}, -->
+<!-- 			    cont = #{cont}, -->
+<!-- 			    upd_dt = sysdate, -->
+<!-- 			    <if test="postSt != null"> -->
+<!-- 			        , post_st = #{postSt} -->
+<!-- 			    </if> -->
+<!-- 			WHERE -->
+<!-- 			    post_seq = #{postSeq} -->
+	</update>
+	
+	
+	<update id="deleteFreeBoard" parameterType="kr.or.ddit.freeboard.vo.FreeBoardVO">
+		UPDATE freeboard
+			SET 
+				post_st = 'N',
+				TITLE = #{title}
+		WHERE 
+				emp_id = #{empId}
+			AND post_seq = #{postSeq}
+	</update>
+
+
+
+
+
+
+	<update id="updateFreeBoardFile" parameterType="kr.or.ddit.freeboard.vo.FreeFileVO">
+		UPDATE free_file
+		    SET
+		        attachfile_st = 'N'
+		WHERE
+		    attachfile_seq = #{attachfileSeq}
+	</update>
+	
+	
+	
+	
+	
+	
+	
+	
+	<select id="selectListReple" parameterType="kr.or.ddit.freeboard.vo.FreeRepleVO" resultType="kr.or.ddit.freeboard.vo.FreeRepleVO">
+		SELECT
+		    reple_seq,
+		    post_seq,
+		    emp_id,
+		    emp_nm,
+		    reple_cont,
+		    reg_dt,
+		    reple_st
+		FROM
+		    free_reple
+		WHERE
+			post_seq = #{postSeq}
+		ORDER BY
+			reple_seq desc
+	</select>
+
+
+
+
+
+
+
+
+
+	<insert id="insertFreeReple" parameterType="kr.or.ddit.freeboard.vo.FreeRepleVO">
+		INSERT INTO free_reple (reple_seq,
+							     post_seq,
+							     emp_id,
+							     emp_nm,
+							     reple_cont,
+							     reg_dt,
+							     reple_st
+							     ) 
+				VALUES (FREE_REPLE_SEQ.nextval,
+						#{postSeq},
+						#{empId},
+						#{empNm},
+						#{repleCont},
+						sysdate,
+						'Y'
+						)
+	</insert>
+		
+		
+		
+		
+		
+		
+		
+	<update id="updateFreeRepleSt" parameterType="kr.or.ddit.freeboard.vo.FreeRepleVO">
+		UPDATE free_reple
+		    SET
+		        reple_st = 'N',
+		        reple_cont = #{repleCont},
+		        reg_dt = SYSDATE
+		    WHERE
+		    	emp_id = #{empId}
+		    AND reple_seq = #{repleSeq}
+		
+	</update>
+
+	
+	
+	
+	<select id="selectFreeBoardPageAllCount" parameterType="kr.or.ddit.freeboard.vo.FreeBoardVO" resultType="int">
+		SELECT COUNT(*)
+		FROM
+		    freeboard
+		    <where>
+					<if test="searchCondition != null and !''.equals(searchCondition) and 
+		              searchKeyword != null and !''.equals(searchKeyword)">
+		         		and ${searchCondition} like '%' || #{searchKeyword} || '%'
+		      		</if>
+				</where>
+	</select>
+	
+</mapper>

@@ -1,0 +1,226 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.emp.dao.EmpMapper">
+
+<select id="getEmp" resultType="kr.or.ddit.emp.vo.EmpVO" parameterType="kr.or.ddit.emp.vo.EmpVO">
+  SELECT
+          emp_id,
+          password,
+          emp_nm,
+          dept_id,
+          manager_id,
+          zipcode,
+          addr1,
+          addr2,
+          emp_hp,
+          emp_mail,
+          bank_acct_no,
+          emp_quit_yn,
+          filepath,
+          realfilename,
+          auth_lv,
+          jobtitle_id
+      FROM
+          emp
+   <where>
+      <if test="empId != null">
+         and emp_id = #{empId} and emp_quit_yn = 'N'   
+      </if>
+   </where>
+</select>
+
+
+<select id="getEmpDept" resultType="kr.or.ddit.emp.vo.EmpVO" parameterType="kr.or.ddit.emp.vo.EmpVO">
+ SELECT	
+        A.emp_id,
+	    A.password,
+	    A.emp_nm,
+	    d.dept_name as dept_id,
+	    A.manager_id,
+	    A.zipcode,
+	    A.addr1,
+	    A.addr2,
+	    A.emp_hp,
+	    A.emp_mail,
+	    A.bank_acct_no,
+	    A.emp_quit_yn,
+	    A.filepath,
+	    A.realfilename,
+	    A.auth_lv,
+	    j.jobtitle_nm as jobtitle_id  
+   FROM(SELECT
+		    emp_id,
+		    password,
+		    emp_nm,
+		    dept_id,
+		    manager_id,
+		    zipcode,
+		    addr1,
+		    addr2,
+		    emp_hp,
+		    emp_mail,
+		    bank_acct_no,
+		    emp_quit_yn,
+		    filepath,
+		    realfilename,
+		    auth_lv,
+		    jobtitle_id
+		FROM
+		    emp) a, dept d, job_title j
+        where emp_id = #{empId}  and emp_quit_yn = 'N' and d.dept_id = a.dept_id and j.jobtitle_id =  a.jobtitle_id
+</select>
+
+
+<update id="updateMypage" parameterType="kr.or.ddit.emp.vo.EmpVO">
+
+  	update emp 
+		set password = #{password}
+		<if test="zipcode != null">
+			,zipcode = #{zipcode} 
+		</if> 
+		<if test="addr1 != null">
+			,addr1 = #{addr1}
+		</if> 
+		<if test="addr2 != null">
+			,addr2 = #{addr2} 
+		</if> 
+		<if test="empHp != null">
+			,emp_hp= #{empHp} 
+		</if> 
+		<if test="empMail != null">
+			,emp_mail= #{empMail} 
+		</if> 
+		<if test="bankAcctNo != null">
+			,bank_acct_no= #{bankAcctNo} 
+		</if> 
+		<if test="filepath != null">
+			 ,filepath= #{filepath} 
+		</if> 
+		<if test="realfilename != null">
+			,realfilename=#{realfilename} 
+		</if> 
+		where emp_id = #{empId}
+
+</update>
+
+<select id="empList" resultType="kr.or.ddit.emp.vo.EmpVO" parameterType="kr.or.ddit.emp.vo.EmpVO">
+     SELECT RES.emp_id as emp_id, 
+	        RES.password as password, 
+	        RES.emp_nm as emp_nm,
+	        RES.dept_id as dept_id, 
+	        RES.manager_id as manager_id, 
+	        RES.zipcode as zipcode,
+	        RES.addr1 as addr1, 
+	        RES.addr2 as addr2,
+	        RES.emp_hp as emp_hp, 
+	        RES.emp_mail as emp_mail,
+	        RES.bank_acct_no as bank_acct_no, 
+	        RES.emp_quit_yn as emp_quit_yn,
+	        RES.filepath as filepath, 
+	        RES.realfilename as realfilename,
+	        RES.auth_lv as auth_lv, 
+	        RES.jobtitle_id as jobtitle_id
+	 FROM (SELECT rownum as rn2,
+			      A.emp_id, A.password, A.emp_nm,
+				  d.dept_name as dept_id,
+				  A.manager_id, A.zipcode,
+				  A.addr1, A.addr2, A.emp_hp, A.emp_mail,
+				  A.bank_acct_no, A.emp_quit_yn,
+				  A.filepath, A.realfilename,
+				  A.auth_lv, A.jobtitle_id
+			FROM (SELECT rownum as rn,
+			             emp_id, password, emp_nm,
+			             dept_id,
+			             manager_id, zipcode,
+			             addr1, addr2, emp_hp, emp_mail,
+			             bank_acct_no, emp_quit_yn,
+			             filepath, realfilename,
+			             auth_lv, jobtitle_id
+			        FROM emp ) a, dept d
+           WHERE d.dept_id = a.dept_id
+           <if test="searchCondition != null and !''.equals(searchCondition) and 
+		              searchKeyword != null and !''.equals(searchKeyword)">
+		         AND ${searchCondition} LIKE '%'||#{searchKeyword}||'%'
+		   </if>) RES
+	where rn2 between (#{pageIndex}-1) * #{recordCountPerPage} + 1 and #{pageIndex} * #{recordCountPerPage}
+</select>
+
+<insert id="insertEmp" parameterType="kr.or.ddit.emp.vo.EmpVO">
+	            insert into emp(EMP_ID, PASSWORD, EMP_NM, DEPT_ID,
+                MANAGER_ID, ZIPCODE, ADDR1, ADDR2,
+                EMP_HP, BANK_ACCT_NO, EMP_QUIT_YN,
+                FILEPATH, REALFILENAME, JOBTITLE_ID, AUTH_LV)
+        values(#{empId}, #{password}, #{empNm}, #{deptId}, 
+               #{managerId}, #{zipcode},#{addr1} , #{addr2}, 
+               #{empHp},  #{bankAcctNo} , 'N', 
+               #{filepath} , #{realfilename},#{jobtitleId}, #{authLv})
+</insert>
+
+<update id="updateEmp" parameterType="kr.or.ddit.emp.vo.EmpVO">
+ 	update emp 
+ 	<set>
+ 		<if test="deptId != null and deptId != ''">
+			DEPT_ID = #{deptId},
+ 		</if>
+ 		<if test="managerId != null and managerId != ''">
+			MANAGER_ID = #{managerId}, 		
+ 		</if>
+ 		<if test="jobtitleId != null and jobtitleId != ''">
+            JOBTITLE_ID= #{jobtitleId} ,
+ 		</if>
+ 		<if test="authLv != null and authLv != ''">
+            AUTH_LV=#{authLv}
+ 		</if>
+ 	</set>
+		where emp_id = #{empId}
+</update>
+
+<select id="selectEmpTotCnt" resultType="java.lang.Integer" parameterType="kr.or.ddit.emp.vo.EmpVO">
+SELECT count(*)
+  FROM emp a, dept d
+  <where>
+   		and d.dept_id = a.dept_id
+	  <if test="searchCondition != null and !''.equals(searchCondition) and 
+              searchKeyword != null and !''.equals(searchKeyword)">
+         and ${searchCondition} like '%' || #{searchKeyword} || '%'
+      </if>
+	</where>
+</select>
+
+<select id="deptList" resultType="kr.or.ddit.business.schedule.vo.DeptVO">
+select * from dept
+	order by upper_dept_id asc,dept_name asc
+</select>
+
+<select id="jobList" resultType="kr.or.ddit.emp.vo.JobVO">
+select * from job_title order by jobtitle_id asc
+</select>
+
+
+<select id="managerIdList" resultType="kr.or.ddit.emp.vo.EmpVO" parameterType="kr.or.ddit.emp.vo.EmpVO">
+	select
+	    E.*
+	from(select
+	        rownum as rn2,
+	        D.*    
+	        from (select
+	                rownum as rn,
+	                A.*    
+	            from emp A,   (select * 
+	                              from dept
+	                              start with dept_id = #{deptId}
+	                              connect by prior upper_dept_id = dept_id
+	                              order siblings by dept_id desc) B, job_title C
+	            where A.emp_id = B.dept_head_id
+	              and A.jobtitle_id = C.jobtitle_id
+	              and C.jobtitle_id > #{jobtitleId}
+	              order by A.dept_id desc)D)E
+where rn2 = 1      
+</select>
+
+<select id="getdeptId" resultType="kr.or.ddit.business.schedule.vo.DeptVO" parameterType="kr.or.ddit.emp.vo.EmpVO">
+	select * from dept where dept_id = #{deptId}
+</select>
+
+
+</mapper>

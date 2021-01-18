@@ -1,0 +1,223 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.mail.dao.MailMapperDao">
+
+<select id="mailList" parameterType="kr.or.ddit.mail.vo.MailVO" resultType="kr.or.ddit.mail.vo.MailVO">
+SELECT a. *
+   FROM(
+SELECT
+	rownum as rn,
+    mail_seq,
+    title,
+    content,
+    sender,
+    receiver,
+    mail_cnt,
+    mail_st,
+    parentmail_id,
+    to_char(mail_send_time,'YY/MM/DD HH24:MI') as mail_send_time
+FROM
+    mail
+    <where>
+		<if test="receiver != null and mailSt != null">
+			and receiver = #{receiver} and mail_st like '%'||#{mailSt}||'%'
+			<if test="mailCnt != null">
+				and mail_cnt = #{mailCnt}
+			</if>
+		</if>
+		
+		
+		<if test="sender != null and mailSt != null">
+			and sender = #{sender} and mail_st like '%'||#{mailSt}||'%'
+		</if>
+		
+		<if test="receiver != null and sender != null">
+			and
+			(SENDER = #{sender} AND MAIL_ST like '%SN%') OR (RECEIVER = #{receiver} AND MAIL_ST like '%RN%')
+		</if>
+		
+      <if test="searchCondition != null and !''.equals(searchCondition) and 
+              searchKeyword != null and !''.equals(searchKeyword)">
+         and ${searchCondition} like '%' || #{searchKeyword} || '%'
+      </if>
+      
+      <if test="parentmailId != null">
+      		and parentmail_id = #{parentmailId}
+      </if>
+      
+	</where>
+	order by mail_seq desc
+	)
+	a
+   WHERE rn between (#{pageIndex}-1) * #{recordCountPerPage} + 1 and #{pageIndex} * #{recordCountPerPage}
+</select>
+
+
+<insert id="mailSend" parameterType="kr.or.ddit.mail.vo.MailVO">
+<selectKey resultType="String" keyProperty="mailSeq" order="BEFORE">
+	select mail_seq.nextval from dual
+</selectKey>
+	insert into mail(
+		mail_seq,
+		title,
+		content,
+		sender,
+		receiver,
+		mail_cnt,
+		mail_st,
+		parentmail_id,
+		mail_send_time)
+	values(
+		#{mailSeq},
+		#{title},
+		#{content},
+		#{sender},
+		#{receiver},
+		'N','RYSY',
+		<choose>
+			<when test="''.equals(parentmailId)">
+				#{mailSeq},
+			</when>
+			<otherwise>
+				#{parentmailId},
+			</otherwise>
+		</choose>
+		sysdate
+	)
+</insert>
+
+<select id="mailFileList" parameterType="kr.or.ddit.mail.vo.MailFileVO" resultType="kr.or.ddit.mail.vo.MailFileVO">
+SELECT
+    attachfile_seq,
+    mail_seq,
+    filepath,
+    realfilename
+FROM
+    mail_file
+    <where>
+		<if test="mailSeq != null">
+			and mail_seq = #{mailSeq}		
+		</if>
+	</where>
+</select>
+
+<insert id="mailFileUpload" parameterType="kr.or.ddit.mail.vo.MailFileVO">
+	insert into mail_file(
+		attachfile_seq,
+	    mail_seq,
+	    filepath,
+	    realfilename
+	) values (
+		mail_attachfile_seq.nextval,
+		#{mailSeq},
+		#{filepath},
+		#{realfilename}
+	)
+
+</insert>
+
+<select id="mailDetail" parameterType="kr.or.ddit.mail.vo.MailVO" resultType="kr.or.ddit.mail.vo.MailVO">
+	SELECT
+    mail_seq,
+    title,
+    content,
+    sender,
+    receiver,
+    mail_cnt,
+    mail_st,
+    parentmail_id,
+    to_char(mail_send_time,'YY/MM/DD HH24:MI') as mail_send_time
+FROM
+    mail
+    <where>
+		<if test="mailSeq != null">
+			and mail_seq = #{mailSeq}		
+		</if>
+	</where>
+</select>
+
+<select id="mailFileDetail" parameterType="kr.or.ddit.mail.vo.MailFileVO" resultType="kr.or.ddit.mail.vo.MailFileVO">
+SELECT
+    attachfile_seq,
+    mail_seq,
+    filepath,
+    realfilename
+FROM
+    mail_file
+    <where>
+		<if test="attachfileSeq != null">
+			and attachfile_seq = #{attachfileSeq}		
+		</if>
+	</where>
+</select>
+
+<update id="mailUpdate" parameterType="kr.or.ddit.mail.vo.MailVO">
+	update mail set
+	mail_cnt = 'Y'
+	WHERE mail_seq = #{mailSeq}
+</update>
+
+<update id="mailDelete" parameterType="kr.or.ddit.mail.vo.MailVO">
+	update mail set
+	mail_st = #{mailSt}
+	WHERE mail_seq = #{mailSeq}
+</update>
+
+
+<select id="selectMailTotCnt" resultType="java.lang.Integer" parameterType="kr.or.ddit.mail.vo.MailVO">
+SELECT count(*)
+  FROM mail
+<where>
+    
+		<if test="receiver != null and mailSt != null">
+			and receiver = #{receiver} and mail_st like '%'||#{mailSt}||'%'
+			<if test="mailCnt != null">
+				and mail_cnt = #{mailCnt}
+			</if>
+		</if>
+		
+		
+		<if test="sender != null and mailSt != null">
+			and sender = #{sender} and mail_st like '%'||#{mailSt}||'%'
+		</if>
+		
+		<if test="receiver != null and sender != null">
+			and
+			(SENDER = #{sender} AND MAIL_ST like '%SN%') OR (RECEIVER = #{receiver} AND MAIL_ST like '%RN%')
+		</if>
+		
+		<if test="receiver != null and mailCnt != null">
+			and receiver = #{receiver} and mail_cnt = #{mailCnt}
+		</if>
+		
+      <if test="searchCondition != null and !''.equals(searchCondition) and 
+              searchKeyword != null and !''.equals(searchKeyword)">
+         and ${searchCondition} like '%' || #{searchKeyword} || '%'
+              
+      </if>
+		
+		<if test="parentmailId != null">
+      		and parentmail_id = #{parentmailId} and mail_st = 'Y'
+      </if>
+		
+	</where>
+</select>
+
+	<select id="autocomplete" parameterType="String" resultType="kr.or.ddit.emp.vo.EmpVO">
+		select empT.emp_id, empT.emp_nm,deptT.dept_name as dept_id
+		from (select *
+		      from dept) deptT,
+		      (select *
+		      from emp) empT
+		where empT.dept_id = deptT.dept_id and empT.EMP_QUIT_YN='N' and
+		(empT.emp_id like '%' || #{keyword} || '%' or empT.emp_nm like '%' || #{keyword} || '%'
+		or deptT.dept_name like '%' || #{keyword} || '%')	
+		and empT.emp_id != #{empId}
+	</select>
+	
+	<select id="mailBack" resultType="kr.or.ddit.mail.vo.MailBackVO" parameterType="java.lang.String">
+		select sender, receiver, mail_st, mail_cnt
+		from mail
+		where mail_seq = #{mailSeq}
+	</select>
+</mapper>

@@ -1,0 +1,219 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.chat.dao.ChatMapperDao">
+	
+
+
+
+	<select id="selectChatRoomList" parameterType="kr.or.ddit.chat.vo.ChatRoomVO" resultType="kr.or.ddit.chat.vo.ChatRoomVO">
+		SELECT chatrm_id,
+		       emp_id,
+		       headcount,
+		       chatrm_pass,
+		       chatrm_nm
+		FROM chat_room
+		WHERE chatrm_id IN (SELECT chatrm_id
+		                    FROM chat_info
+		                    where emp_id = #{empId}
+		                    AND chat_st = 'Y')
+		<if test="chatrmNm != '' and chatrmNm != null">
+			AND chatrm_nm like '%'||#{chatrmNm}||'%'
+		</if>
+	</select>
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	<select id="selectChatInfoList" parameterType="kr.or.ddit.chat.vo.ChatInfoVO" resultType="kr.or.ddit.chat.vo.ChatInfoVO">
+		SELECT chat_seq,
+		       chatrm_id,
+		       emp_id,
+		       chat_cont,
+		       chat_dt,
+		       emp_nm,
+		       chat_st
+		FROM chat_info
+		WHERE chatrm_id = #{chatrmId}
+		order by chat_dt asc
+	</select>
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	<insert id="insertChatInfo" parameterType="kr.or.ddit.chat.vo.ChatInfoVO">
+		INSERT INTO chat_info (chat_seq,
+							   chatrm_id,
+							   emp_id,
+							   chat_cont,
+							   chat_dt,
+							   emp_nm,
+							   chat_st) 
+				VALUES (CHAT_SEQ.nextval,
+						#{chatrmId},
+						#{empId},
+						#{chatCont},
+						sysdate,
+						#{empNm},
+						'Y')
+	</insert>
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	<select id="selectEmpList" resultType="kr.or.ddit.emp.vo.EmpVO">
+		SELECT
+		    emp_id,
+		    password,
+		    emp_nm,
+		    dept_id,
+		    manager_id,
+		    zipcode,
+		    addr1,
+		    addr2,
+		    emp_hp,
+		    emp_mail,
+		    bank_acct_no,
+		    emp_quit_yn,
+		    filepath,
+		    realfilename,
+		    auth_lv,
+		    jobtitle_id
+		FROM
+		    emp
+	</select>
+	
+	
+	<select id="selectChatRoomId" resultType="String">
+		SELECT LPAD(CHAT_ROOM_SEQ.nextval, 6, '0')
+		FROM dual
+	</select>
+
+
+
+
+	<insert id="insertChatRoom" parameterType="kr.or.ddit.chat.vo.ChatRoomVO">
+		INSERT INTO chat_room (chatrm_id,
+							   emp_id,
+							   chatrm_nm,
+							   headcount)
+				VALUES (#{chatrmId},
+						#{empId},
+						#{chatrmNm},
+						#{headcount})
+	</insert>
+	
+	
+	
+	
+	
+	
+	<select id="selectAddChatRoomEmpList" parameterType="String" resultType="kr.or.ddit.emp.vo.EmpVO">
+		SELECT
+		    emp_id,
+		    password,
+		    emp_nm,
+		    dept_id,
+		    manager_id,
+		    zipcode,
+		    addr1,
+		    addr2,
+		    emp_hp,
+		    emp_mail,
+		    bank_acct_no,
+		    emp_quit_yn,
+		    filepath,
+		    realfilename,
+		    jobtitle_id,
+		    auth_lv
+		FROM
+		    emp
+		WHERE 1 = 1
+		AND (emp_id in (select emp_id from chat_info where chatrm_id = #{chatRoomId} and chat_st = 'N' ) or
+		    emp_id not in (SELECT emp_id FROM chat_info WHERE chatrm_id = #{chatRoomId}))
+		order by emp_id
+	</select>
+
+
+
+
+
+
+	<update id="updateChatInfoEmp" parameterType="kr.or.ddit.chat.vo.ChatInfoVO">
+		UPDATE chat_info
+		   SET chat_st = #{chatSt}
+		WHERE chatrm_id = #{chatrmId}
+		AND emp_id = #{empId}
+	</update>
+	
+	
+	
+	
+	
+	
+	<select id="selectChatRMInfo" parameterType="kr.or.ddit.chat.vo.ChatRoomVO" resultType="kr.or.ddit.chat.vo.ChatRoomVO">
+		SELECT chatrm_id,
+		       emp_id,
+		       headcount,
+		       chatrm_pass,
+		       chatrm_nm
+		FROM chat_room
+		WHERE chatrm_id = #{chatrmId}
+	</select>
+	
+	
+	
+	
+	
+	
+	
+	
+
+	<update id="updateChatRMInfo" parameterType="kr.or.ddit.chat.vo.ChatRoomVO">
+		UPDATE chat_room
+		    SET
+		        chatrm_id = #{chatrmId}
+		        <if test="headcount != 0">
+		        	, headcount = #{headcount}
+		        </if>
+		        <if test="chatrmNm != null and !chatrmNm.equals('')">
+		        	, chatrm_nm = #{chatrmNm}
+		        </if>
+		WHERE
+		    chatrm_id = #{chatrmId}
+	</update>
+	
+	
+	
+	<update id="updateChatAlarmInfo" parameterType="kr.or.ddit.alarm.vo.AlarmVO">
+		UPDATE alarm
+		SET alarm_st = #{alarmSt}
+		WHERE EMP_ID = #{empId}
+		AND ALARM_CONT LIKE #{alarmCont} || '%'
+		AND ALARM_LINK_CONT LIKE '%' || #{alarmLinkCont} || '%'
+	</update>
+	
+	
+	
+	
+	
+</mapper>

@@ -1,0 +1,375 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+
+<mapper namespace="kr.or.ddit.business.busiboard.dao.BusiBoardMapperDao">
+
+
+<select id="selectBusiBoardList" parameterType="kr.or.ddit.business.busiboard.vo.BusiBoardVO" resultType="kr.or.ddit.business.busiboard.vo.BusiBoardVO">
+SELECT
+    A.board_id,
+    A.board_nm,
+    A.dept_id
+FROM
+    busi_board A, (SELECT *
+                         FROM dept
+			   		       start with dept_id = #{deptId}
+			             connect by prior dept_id = upper_dept_id
+			             order siblings by dept_id)B
+
+where A.dept_id = B.dept_id
+</select>
+
+
+<select id="selectBusiPostList" parameterType="kr.or.ddit.business.busiboard.vo.BusiBoardVO" resultType="kr.or.ddit.business.busiboard.vo.BusiPostVO">
+<!-- E.post_seq as post_seq,
+		E.board_id as board_id,
+		E.emp_id as emp_id,
+		E.title as title,
+		E.content as content,
+		E.reg_dt as reg_dt,
+		E.parentpost_id as parentpost_id,
+		E.post_st as post_st -->
+ 
+ 
+ select  
+		E.*
+  from (select rownum as rn,
+		        D.post_seq as post_seq,
+				D.board_id as board_id,
+				D.emp_id as emp_id,
+				D.emp_nm as emp_nm,
+				D.dept_id as dept_id,
+				D.dept_name as dept_name,
+				D.jobtitle_id as jobtitle_id,
+				D.jobtitle_nm as jobtitle_nm,
+				lpad('   ↳', (level-1)*4) || D.title as title,
+				D.content as content,
+				D.reg_dt as reg_dt,
+				D.parentpost_id as parentpost_id,
+				D.post_st as post_st
+		from (select 
+					A.post_seq as post_seq,
+					A.board_id as board_id,
+					A.emp_id as emp_id,
+					B.emp_nm as emp_nm,
+					B.dept_id as dept_id,
+					F.dept_name as dept_name,
+					B.jobtitle_id as jobtitle_id, 
+					C.jobtitle_nm as jobtitle_nm,
+					A.title as title,
+					A.content as content,
+					A.reg_dt as reg_dt,
+					A.parentpost_id as parentpost_id,
+					A.post_st as post_st
+		 		from busi_post A, emp B, job_title C, dept F
+		 		 
+			   <where>
+					<if test="boardId != null">
+						and A.board_id=#{boardId}
+						and A.emp_id = B.emp_id
+						and B.jobtitle_id = C.jobtitle_id
+						and B.dept_id = F.dept_id
+					</if>		
+			  </where> )D
+		<where>
+			<if test="searchCondition != null and !''.equals(searchCondition)
+					  and searchKeyword != null and !''.equals(searchKeyword)">
+				and D.${searchCondition} like '%' || #{searchKeyword} || '%'
+			</if>
+		</where>	   
+		start with D.parentpost_id is null
+		connect by prior D.post_seq = D.parentpost_id
+		order siblings by D.reg_dt desc, D.post_seq asc
+		)E
+where E.rn between (#{pageIndex}-1) * #{recordCountPerPage} + 1 and #{pageIndex} * #{recordCountPerPage}
+</select>
+
+
+<select id="selectBusiPost" parameterType="kr.or.ddit.business.busiboard.vo.BusiPostVO" resultType="kr.or.ddit.business.busiboard.vo.BusiPostVO">
+SELECT
+	A.post_seq as post_seq,
+	A.board_id as board_id,
+	A.emp_id as emp_id,
+	B.emp_nm as emp_nm,
+	C.jobtitle_nm as jobtitle_nm,
+	A.title as title,
+	A.content as content,
+	A.reg_dt as reg_dt,
+	A.parentpost_id as parentpost_id,
+	A.post_st as post_st
+FROM (select * from busi_post
+		<where>
+	    	<if test="postSeq != null">
+    			and post_seq = #{postSeq}
+    		</if>
+    	</where> )A, emp B, job_title C
+<where>
+	and A.emp_id = B.emp_id
+	and B.jobtitle_id = C.jobtitle_id
+</where>	      
+    
+</select>
+
+<select id="selectBusiBoard" parameterType="kr.or.ddit.business.busiboard.vo.BusiBoardVO" resultType="kr.or.ddit.business.busiboard.vo.BusiBoardVO">
+SELECT
+    board_id,
+    board_nm,
+    dept_id
+FROM
+    busi_board
+    
+    <where>
+    	<if test="true">
+    		and board_id = #{boardId}
+    	</if>
+    </where>
+</select>
+
+
+<insert id="insertBusiFileList" parameterType="java.util.List">
+    INSERT INTO busi_file (
+    		attachfile_seq,
+    		post_seq,
+   			filepath,
+    		realfilename,
+    		attachfile_st
+	) SELECT busi_attachfile_seq.nextval as attachfileSeq, 
+			 A.*
+	  FROM(
+		<foreach collection="list" item="item" index="index" separator="union all">
+			SELECT  #{item.postSeq} as postSeq,
+					#{item.filepath} as filepath,
+					#{item.realfilename} as realfilename,
+					#{item.attachfileSt} as attachfileSt
+			FROM dual
+		</foreach>
+	  ) A
+</insert>
+
+<insert id="insertBusiPost" parameterType="kr.or.ddit.business.busiboard.vo.BusiPostVO">
+<selectKey keyColumn="post_seq" keyProperty="postSeq" order="AFTER"  resultType="kr.or.ddit.business.busiboard.vo.BusiPostVO">
+	select busi_post_seq.currVal as post_seq from dual
+</selectKey>
+INSERT INTO busi_post (
+    post_seq,
+    board_id,
+    emp_id,
+    title,
+    content,
+    reg_dt,
+    parentpost_id,
+    post_st
+) VALUES (
+    busi_post_seq.nextVal,
+    #{boardId},
+    #{empId},
+    #{title},
+    #{content},
+    sysdate,
+    <choose>
+    	<when test="parentpostId != 0">
+	    #{parentpostId},    	
+    	</when>
+    	<otherwise>
+    	null,
+    	</otherwise>
+    </choose>
+    'Y'
+)
+</insert>
+
+<select id="selectBusiFileList" parameterType="kr.or.ddit.business.busiboard.vo.BusiPostVO" resultType="kr.or.ddit.business.busiboard.vo.BusiFileVO">
+SELECT
+    attachfile_seq,
+    post_seq,
+    filepath,
+    realfilename,
+    attachfile_st
+FROM
+    busi_file
+    
+    <where>
+    	<if test="postSeq != 0">
+    		and post_seq = #{postSeq}
+    	</if>
+    	<if test="true">
+    		and attachfile_st = 'Y'
+    	</if>
+    </where>
+    
+</select>
+<select id="selectBusiRepleList" parameterType="kr.or.ddit.business.busiboard.vo.BusiPostVO" resultType="kr.or.ddit.business.busiboard.vo.BusiRepleVO">
+SELECT
+   A.reple_seq as reple_seq,
+   A.post_seq as post_seq,
+   A.emp_id as emp_id,
+   B.emp_nm as emp_nm,
+   C.jobtitle_id as jobtitle_id,
+   C.jobtitle_nm as jobtitle_nm,
+   A.reple_cont as reple_cont,
+   A.reg_dt as reg_dt,
+   A.reple_st as reple_st
+FROM
+    (select * from busi_reple
+		<where>
+	    	<if test="postSeq != 0">
+    			and post_seq = #{postSeq}
+    		</if>
+    	</where> )A, emp B, job_title C
+<where>
+	and A.emp_id = B.emp_id
+	and B.jobtitle_id = C.jobtitle_id
+</where>
+      
+ORDER BY reg_dt ASC
+    
+</select>
+
+
+<select id="selectBusiFile" parameterType="kr.or.ddit.business.busiboard.vo.BusiFileVO" resultType="kr.or.ddit.business.busiboard.vo.BusiFileVO">
+SELECT
+    attachfile_seq,
+    post_seq,
+    filepath,
+    realfilename,
+    attachfile_st
+FROM
+    busi_file
+    <where>
+    	<if test="attachfileSeq != 0">
+    		and attachfile_seq = #{attachfileSeq}
+    	</if>
+    	<if test="true">
+    		and attachfile_st = 'Y'
+    	</if>
+    </where>
+    
+</select>
+
+
+
+<insert id="insertBusiReple" parameterType="kr.or.ddit.business.busiboard.vo.BusiRepleVO">
+INSERT INTO busi_reple (
+    reple_seq,
+    post_seq,
+    emp_id,
+    reple_cont,
+    reg_dt,
+    reple_st
+) VALUES (
+    busi_reple_seq.nextVal,
+    #{postSeq},
+    #{empId},
+    #{repleCont},
+    sysdate,
+    'Y'
+)
+</insert>
+<update id="updateBusiReple" parameterType="kr.or.ddit.business.busiboard.vo.BusiRepleVO">
+UPDATE busi_reple
+    SET
+        reple_st = #{repleSt}
+<where>
+	<if test="repleSeq != 0">
+		and reple_seq = #{repleSeq}
+	</if>
+
+</where>
+    
+</update>
+
+<update id="updateBusiPost" parameterType="kr.or.ddit.business.busiboard.vo.BusiPostVO">
+UPDATE busi_post
+    SET
+		<if test="title != null and !''.equals(title)">
+	        title = #{title},		
+		</if>
+		
+		<if test="content != null and !''.equals(content)">
+	        content=#{content},		
+		</if>
+		    
+        <if test="postSt != null and !''.equals(postSt)">
+        	post_st = #{postSt},
+        </if>     
+        post_seq = #{postSeq}
+	<where>
+		<if test="postSeq != 0">
+			and post_seq = #{postSeq} 
+		</if>
+	</where>
+</update>
+
+
+<update id="deleteFileList" parameterType="java.util.List">
+<foreach collection="list" index="index" item="item" open="begin" close=";end;" separator=";">
+ UPDATE busi_file
+    SET
+        attachfile_st = #{item.attachfileSt}
+    <where>
+    	and attachfile_seq = #{item.attachfileSeq}
+    </where>
+</foreach>
+</update>
+
+<select id="selectBusiPostTotCnt" parameterType="kr.or.ddit.business.busiboard.vo.BusiBoardVO" resultType="java.lang.Integer">
+<!-- SELECT count(*)
+  FROM
+  		busi_post
+  		<where>
+  			<if test="boardId != null and !''.equals(boardId)">
+  				and board_id = #{boardId}
+  			</if>
+  			
+  			<if test="searchCondition != null and !''.equals(searchCondition)
+					  and searchKeyword != null and !''.equals(searchKeyword)">
+			and ${searchCondition} like '%' || #{searchKeyword} || '%'
+			</if>
+  		</where> -->
+  		
+  		select count(*)
+  		
+		 from (select 
+					A.post_seq as post_seq,
+					A.board_id as board_id,
+					A.emp_id as emp_id,
+					B.emp_nm as emp_nm,
+					C.jobtitle_nm as jobtitle_nm,
+					A.title as title,
+					A.content as content,
+					A.reg_dt as reg_dt,
+					A.parentpost_id as parentpost_id,
+					A.post_st as post_st
+		 		from busi_post A, emp B, job_title C
+		 		 
+			   <where>
+					<if test="boardId != null and boardId !=''">
+						and board_id=#{boardId}
+						and A.emp_id = B.emp_id
+						and B.jobtitle_id = C.jobtitle_id
+					</if>		
+			  </where> )D
+		
+	<where>
+		<if test="searchCondition != null and !''.equals(searchCondition)
+				  and searchKeyword != null and !''.equals(searchKeyword)">
+			and D.${searchCondition} like '%' || #{searchKeyword} || '%'
+		</if>
+	</where>	   
+  				
+</select>
+
+<select id="selectFileTotCnt" parameterType="kr.or.ddit.business.busiboard.vo.BusiPostVO" resultType="java.lang.Integer">
+SELECT COUNT(*)
+  FROM	busi_file
+  where post_seq = #{postSeq}
+    and attachfile_st='Y' 
+</select>
+
+<select id="selectRepleTotCnt" parameterType="kr.or.ddit.business.busiboard.vo.BusiPostVO" resultType="java.lang.Integer">
+SELECT COUNT(*)
+  FROM	busi_reple
+  where post_seq = #{postSeq}
+    and reple_st='Y' 
+</select>
+</mapper>

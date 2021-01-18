@@ -1,0 +1,683 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.report.dao.ReportMapperDao">
+	
+<select id="getRepostList" parameterType="kr.or.ddit.report.vo.ReportVO" resultType="kr.or.ddit.report.vo.ReportVO">
+SELECT a. *
+   FROM(
+		SELECT
+			rownum as rn,
+		    A.report_id,
+		    A.emp_id,
+		    B.emp_nm as emp_nm,
+		    A.type_id,
+		    A.report_dt,
+		    A.report_st,
+		    A.title,
+		    A.content,
+		    A.approver,
+		    D.emp_nm as approver_nm,
+		    A.appr_kind,
+		    C.dept_name
+		FROM
+	    	report A, emp B, dept C, emp D 
+	    <where>
+	    	<if test="empId != null and reportSt != null">
+	    		and A.emp_id = #{empId} 
+	    		and report_st = #{reportSt}
+	    		and A.emp_id = B.emp_id
+	    		and B.dept_id = C.dept_id
+	    		and A.approver = D.emp_id
+	    	</if>
+	    </where>
+	    ORDER BY
+	    	A.report_dt desc
+	    )a
+WHERE rn between (#{pageIndex}-1) * #{recordCountPerPage} + 1 and #{pageIndex} * #{recordCountPerPage}
+</select>
+	
+	<select id="selectReportTotCnt" resultType="java.lang.Integer" parameterType="kr.or.ddit.report.vo.ReportVO">
+SELECT count(*)
+	  FROM report A
+	  <where>
+	    	<if test="empId != null and empId != ''">
+	    		and A.emp_id = #{empId}
+	    	</if>
+	    	
+	    	<if test="reportSt != null and reportSt != ''">
+	    		and A.report_st = #{reportSt}
+	    	</if>
+	    	
+	    	<if test="approver != null and approver !=''">
+	    		and A.approver = #{approver}
+	    		and (A.report_st = 'W' or A.report_st = 'ing') 
+	    	</if>
+	    	
+	    	<!-- 사인이 기안 문서를 읽었는 지 구분  -->
+	    	<if test="readYn != null and readYn !=''">
+	    		and ( A.read_yn is null or not A.read_yn = #{readYn} )
+	    	</if>
+	    </where>
+</select>
+
+<!-- 기안문 양식 가져오기  -->
+<select id="selectReportTypeList" resultType="kr.or.ddit.report.vo.ReportTypeVO">
+SELECT type_id,
+	   type_nm,
+	   type_cont
+  FROM report_type
+</select>
+
+<!-- 사용자가 등록해 놓은 결재선 가져오기  -->
+<select id="selectApprovLineList" parameterType="kr.or.ddit.report.vo.ApprovLineVO" resultType="kr.or.ddit.report.vo.ApprovLineVO">
+SELECT
+    A.approv_line_seq,
+    A.appr_kind,
+    A.emp_id,
+    A.appr_step,
+    A.appr_curr_emp,
+    B.emp_nm as curr_emp_nm,
+    B.dept_id as curr_dept_id,
+    C.dept_name as curr_dept_nm,
+    B.jobtitle_id as curr_job_id,
+    D.jobtitle_nm as curr_job_nm
+
+FROM (select * from approv_line
+        where emp_id = #{empId}
+          and appr_st_code = 'U') A, emp B, dept C, job_title D
+<where>
+	  A.appr_curr_emp = B.emp_id
+	 and B.dept_id = C.dept_id
+	  and B.jobtitle_id = D.jobtitle_id
+
+</where>
+
+order by appr_kind asc, appr_step asc
+</select>
+
+<!-- 결재선 종류별 로우 카운트  -->
+<select id="selectApprLineCounterList" resultType="kr.or.ddit.report.vo.ApprovLineCounterVO" parameterType="kr.or.ddit.report.vo.ApprovLineVO">
+SELECT
+  	DISTINCT appr_kind,
+  	COUNT(appr_kind) as appr_line_cnt
+FROM approv_line
+<where>
+  emp_id = #{empId}
+  and appr_st_code = 'U'
+</where>
+  GROUP BY appr_kind
+  ORDER BY appr_kind asc
+</select>
+
+<!-- 사용자가 결재선 리스트 중에서 선택한 결재선을 가져오는 메서드  -->
+<select id="selectApprovLine" parameterType="kr.or.ddit.report.vo.ApprovLineVO" resultType="kr.or.ddit.report.vo.ApprovLineVO">
+SELECT
+    A.approv_line_seq,
+    A.appr_kind,
+    A.emp_id,
+    A.appr_step,
+    A.appr_curr_emp,
+    B.emp_nm as curr_emp_nm,
+    B.dept_id as curr_dept_id,
+    C.dept_name as curr_dept_nm,
+    B.jobtitle_id as curr_job_id,
+    D.jobtitle_nm as curr_job_nm,
+    A.appr_next_emp as appr_next_emp
+FROM (select * from approv_line
+        where emp_id = #{empId} 
+          and appr_kind = #{apprKind}) A, emp B, dept C, job_title D
+<where>
+	 A.appr_curr_emp = B.emp_id
+	 and B.dept_id = C.dept_id
+	 and B.jobtitle_id = D.jobtitle_id
+
+</where>
+
+order by appr_kind asc, appr_step asc
+</select>
+
+<!-- 사용자가 설정한 결재선을 db에 저장하는 메서드  -->
+<insert id="insertApprovLine" parameterType="kr.or.ddit.report.vo.ApprovLineListVO">
+<selectKey keyColumn="appr_kind" keyProperty="apprKind" order="AFTER" resultType="kr.or.ddit.report.vo.ApprovLineListVO">
+	SELECT #{apprKind} as appr_kind from dual
+</selectKey>
+INSERT INTO approv_line (
+    approv_line_seq,
+    emp_id,
+    appr_kind,
+    appr_st_code,
+    appr_curr_emp,
+    appr_next_emp,
+    appr_step
+) 	SELECT
+		approv_line_seq.nextval as approvLineSeq,
+		#{empId},
+		#{apprKind},
+		#{apprStCode},
+		A.*
+	FROM (
+		<foreach collection="approvLineList" item="item" separator="union all">
+			select
+				#{item.apprCurrEmp} as apprCurrEmp,
+				#{item.apprNextEmp} as apprNextEmp,
+				#{item.apprStep} as apprStep
+			FROM dual
+		</foreach>
+	)A
+</insert>
+<!-- 내일 해야할것 20-12-30  -->
+<select id="selectReport" parameterType="kr.or.ddit.report.vo.ReportVO" resultType="kr.or.ddit.report.vo.ReportVO">
+SELECT
+    A.report_id,
+    A.emp_id,
+    A.type_id,
+    A.report_dt,
+    A.report_st,
+    A.title,
+    A.content,
+    A.approver,
+    E.appr_next_emp as next_approver,
+    A.appr_kind,
+    B.emp_nm as emp_nm,
+    C.dept_id as dept_id,
+    C.dept_name as dept_name,
+    D.jobtitle_id as jobtitle_id,
+    D.jobtitle_nm as jobtitle_nm,
+    A.start_dt,
+    A.end_dt,
+    A.report_opt_code,
+    A.report_opt_cont
+    <if test="reportOptCode == 'vacatType'">
+		,F.vacate_type_name    	
+    </if>
+FROM
+    report A, emp B, dept C, job_title D, approv_line E
+    <if test="reportOptCode == 'vacatType'">
+	    , vacate_type F
+    </if>
+
+where
+	A.report_id = #{reportId}
+  AND A.emp_id = B.emp_id
+  AND B.dept_id = C.dept_id
+  AND B.jobtitle_id = D.jobtitle_id
+  and A.approver = E.appr_curr_emp
+  and B.emp_id = E.emp_id
+  and A.appr_kind = E.appr_kind
+  <if test="reportOptCode == 'vacatType'">
+  	and A.report_opt_cont = F.vacate_type_code
+   </if>
+</select>
+
+<select id="selectReportType" parameterType="kr.or.ddit.report.vo.ReportVO" resultType="kr.or.ddit.report.vo.ReportTypeVO">
+SELECT
+    type_id,
+    type_nm,
+    type_cont
+FROM
+    report_type
+WHERE
+	type_id = #{typeId}
+</select>
+
+<!-- 기안자 id, 기안서 양식 id, 결재선 id 정보를 가져와 기안을 등록  -->
+<insert id="insertReport" parameterType="kr.or.ddit.report.vo.ReportVO">
+<selectKey keyColumn="report_id" keyProperty="reportId" order="AFTER" resultType="kr.or.ddit.report.vo.ReportVO">
+		SELECT 'DRFT-'||LPAD(REPORT_SEQ.CURRVAL, 10, '0') as report_id FROM DUAL
+	</selectKey>
+
+INSERT INTO report (
+    report_id,
+    emp_id,
+    type_id,
+    report_dt,
+    title,
+    content,
+    approver,
+    appr_kind,
+    start_dt,
+    end_dt,
+    report_opt_code,
+    report_opt_cont,
+    read_yn,
+    report_st
+) SELECT 
+		'DRFT-'||LPAD(REPORT_SEQ.NEXTVAL, 10, '0') as report_id,
+		A.emp_id as emp_id,
+		B.type_id as type_id,
+		SYSDATE as report_dt,
+		<choose>
+			<when test="title != null and title != ''">
+				#{title} as title,
+			</when>
+			<otherwise>
+				null as title,
+			</otherwise>
+		</choose>
+		<choose>
+			<when test="content != null and content != ''">
+				#{content} as content,
+			</when>
+			<otherwise>
+				B.type_cont as content,			
+			</otherwise>
+		</choose>
+		A.appr_curr_emp as approver,
+		A.appr_kind as appr_kind,
+		<choose>
+			<when test="startDt != null and startDt != ''">
+				cast(to_timestamp(#{startDt}, 'yyyy-mm-dd hh24:mi:ss.ff') as date) as start_dt,
+			</when>
+			<otherwise>
+				null as start_dt,
+			</otherwise>
+		</choose>
+		<choose>
+			<when test="endDt != null and endDt != ''">
+				cast(to_timestamp(#{endDt}, 'yyyy-mm-dd hh24:mi:ss.ff') as date) as end_dt,
+			</when>
+			<otherwise>
+				null as end_dt,
+			</otherwise>
+		</choose>
+		<choose>
+			<when test="reportOptCode != null and reportOptCode != ''">
+				#{reportOptCode} as report_opt_code,
+			</when>
+			<otherwise>
+				null as report_opt_code,
+			</otherwise>
+		</choose>
+		<choose>
+			<when test="reportOptCont != null and reportOptCont != ''">
+				#{reportOptCont} as report_opt_cont,
+			</when>
+			<otherwise>
+				null as report_opt_cont,
+			</otherwise>
+		</choose>
+		'N' as read_yn,
+		null as report_st
+	FROM approv_line A, report_type B
+		
+	WHERE A.appr_kind = #{apprKind} 
+		  AND A.emp_id = #{empId}
+		  AND A.appr_step = 1
+		  AND B.type_id = #{typeId}
+</insert>
+
+
+<update id="updateReport" parameterType="kr.or.ddit.report.vo.ReportVO">
+UPDATE report
+
+<set>
+	<if test="uploadtoken == 'uploadchecking'">
+		report_dt = sysdate,
+	</if>
+	
+	<if test="title != null and title != ''">
+       title = #{title},	
+	</if>
+	
+	<if test="content != null and title !=''">
+		content = #{content},
+	</if>
+	
+	<choose>
+		<when test="nextApprover != null and nextApprover != ''">
+	       approver = #{nextApprover},		
+		</when>
+		<when test="approver != null and approver != ''">
+			approver= #{approver},
+		</when>
+	</choose>
+	
+	<if test="startDt != null and startDt !=''">
+		start_dt = cast(to_timestamp(#{startDt},'yyyy-mm-dd hh24:mi:ss.ff') as date),
+	</if>
+
+	<if test="endDt != null and endDt !=''">
+		end_dt = cast(to_timestamp(#{endDt},'yyyy-mm-dd hh24:mi:ss.ff') as date),
+	</if>
+	
+	<if test="reportOptCode != null and reportOptCode !=''">
+		report_opt_code = #{reportOptCode},
+	</if>
+	
+	<if test="reportOptCont != null and reportOptCont !=''">
+		report_opt_cont = #{reportOptCont},
+	</if>
+	
+	<if test="readYn != null and readYn != ''">
+		read_yn = #{readYn},
+	</if>
+	
+	<if test="reportSt != null and reportSt != ''">
+       report_st = #{reportSt}
+	</if>
+</set>
+
+<where>
+    report_id =#{reportId}
+</where>
+</update>
+
+
+
+
+
+
+<insert id="insertReportSign" parameterType="kr.or.ddit.report.vo.ReportVO">
+  INSERT INTO report_sign (
+    sign_seq,
+    report_id,
+    emp_id,
+    sign_info
+) VALUES (
+	report_sign_seq.nextval,
+	#{reportId},
+	#{empId},
+	#{signInfo}
+
+)
+</insert>
+
+
+<insert id="insertReportFileList" parameterType="kr.or.ddit.report.vo.ReportVO">
+INSERT INTO report_file (
+    attachfile_seq,
+    report_id,
+    filepath,
+    realfilename
+) SELECT
+	REPORT_ATTACHFILE_SEQ.nextval as attachfileSeq,
+	A.*
+	
+  FROM
+  (	<foreach collection="reportFileList" item="item" separator="union all">
+		SELECT
+			#{item.reportId} as reportId,
+			#{item.filepath} as filepath,
+			#{item.realfilename} as realfilename
+		FROM 
+			dual
+	</foreach>
+  ) A
+
+</insert>
+
+
+<select id="selectSignList" parameterType="kr.or.ddit.report.vo.ReportVO" resultType="kr.or.ddit.report.vo.ReportSignVO">
+SELECT
+    sign_seq,
+    report_id,
+    emp_id,
+    sign_info
+FROM
+    report_sign
+WHERE
+	report_id = #{reportId}
+ORDER BY sign_seq ASC
+    
+</select>
+<select id="selectReportFileList" parameterType="kr.or.ddit.report.vo.ReportVO" resultType="kr.or.ddit.report.vo.ReportFileVO">
+  SELECT
+    attachfile_seq,
+    report_id,
+    filepath,
+    realfilename
+FROM
+    report_file
+    
+WHERE
+	report_id = #{reportId}
+    
+</select>
+<select id="selectReportList" parameterType="kr.or.ddit.report.vo.ReportVO" resultType="kr.or.ddit.report.vo.ReportVO">
+SELECT F.*
+   from (select
+            rownum as rn,
+		    A.report_id,
+		    A.emp_id,
+		    A.type_id,
+		    E.type_nm,
+		    A.report_dt,
+		    A.report_st,
+		    A.title,
+		    A.approver,
+		    A.appr_kind,
+		    B.emp_nm as emp_nm,
+		    C.dept_id as dept_id,
+		    C.dept_name as dept_name,
+		    D.jobtitle_id as jobtitle_id,
+		    D.jobtitle_nm as jobtitle_nm
+		    <if test="empId != null and empId != ''">
+		    ,G.approv_dt as approv_dt,
+		    G.approv_result as approv_result,
+		    G.check_yn as check_yn		    
+		    </if>
+		FROM
+		    report A, emp B, dept C, job_title D, report_type E
+		    
+		    <if test="empId != null and empId != ''">
+		    , approval G		    
+		    </if>
+		<where>
+			<if test="approver != null and approver != ''">
+			  and A.approver = #{approver}
+			  AND A.emp_id = B.emp_id
+			  AND B.dept_id = C.dept_id
+			  AND B.jobtitle_id = D.jobtitle_id
+			  and A.type_id = E.type_id
+			  and (A.report_st = 'W' or A.report_st = 'ing') 			
+			</if>
+			<!-- 결재 완료 문서 조회시 조건  -->
+			<if test="empId != null and empId != ''">
+				and G.emp_Id = #{empId}
+				and G.report_id = A.report_id
+				and A.emp_id = B.emp_id
+				and A.type_id = E.type_id
+				and B.dept_id = C.dept_id
+				and B.jobtitle_id = D.jobtitle_id
+			</if>
+			
+			<if test="searchKeyword != null and searchKeyword != ''">
+				<choose>
+					<when test="searchCondition == 0">
+						and A.title like '%' || #{searchKeyword} || '%'
+					</when>
+					<when test="searchCondition == 1">
+						and B.emp_nm like '%' || #{searchKeyword} || '%'
+					</when>	
+				</choose>
+			</if>
+		</where>
+		  order by 
+		  		A.report_dt desc
+			  <if test="empId != null and empId != ''">
+				,G.check_yn asc
+			  </if>
+			  )F
+		  		
+<where>
+		and F.rn between #{firstIndex} and #{lastIndex}
+</where> 
+	  		
+<!-- where rownum between (#{pageIndex}-1) * #{recordCountPerPage} + 1 and #{pageIndex} * #{recordCountPerPage} -->
+</select>
+
+
+<select id="selectApprovalList" parameterType="kr.or.ddit.report.vo.ReportVO" resultType="kr.or.ddit.report.vo.ApprovalVO">
+SELECT * 
+  FROM	approval
+  where report_id = #{reportId}
+  order by approv_step asc
+</select>
+<insert id="insertApproval" parameterType="kr.or.ddit.report.vo.ApprovalVO">
+INSERT INTO approval (
+    approv_id,
+    report_id,
+    emp_id,
+    approv_dt,
+    check_yn,
+    approv_step,
+    approv_result,
+    approv_text
+) SELECT 
+	'APRV-'|| LPAD(approval_seq.nextval, 10, '0'),
+    #{reportId},
+    #{empId},
+    SYSDATE,
+    'N',
+    (select count(*) + 1 as cnt from approval where report_id = #{reportId}),
+	#{approvResult},
+	#{approvText}
+		    
+    FROM DUAL
+</insert>
+
+<select id="selectReportFile" parameterType="kr.or.ddit.report.vo.ReportFileVO" resultType="kr.or.ddit.report.vo.ReportFileVO">
+SELECT * 
+  FROM report_file
+where attachfile_seq = #{attachfileSeq}  
+
+</select>
+
+
+<select id="selectEmpSign" parameterType="kr.or.ddit.report.vo.ReportVO" resultType="java.lang.String">
+SELECT
+    sign_info
+FROM
+    emp_sign
+WHERE
+	emp_id = #{empId}
+</select>
+
+
+
+	<select id="selectVacateDayCnt" parameterType="kr.or.ddit.vacation.vo.VacationVO" resultType="int">
+		SELECT count(*) as vacate_day_cnt
+		FROM (SELECT (to_date(#{vacateStartDt})+rn) as ls_day
+			        , to_char(to_date(#{vacateStartDt})+rn,'d')
+			        , to_char(to_date(#{vacateStartDt})+rn,'dy')
+		      FROM (select rownum rn from all_objects)
+		      WHERE to_char(to_date(#{vacateStartDt})+rn,'d') in ('2','3','4','5','6'))
+		WHERE ls_day <![CDATA[ >= ]]> to_date(#{vacateStartDt}) 
+		AND ls_day <![CDATA[ <= ]]> to_date(#{vacateEndDt})
+	</select>
+	
+	
+	
+	<insert id="insertVacationInfo" parameterType="kr.or.ddit.vacation.vo.VacationVO">
+		<choose>
+			<when test="vacateTypeSeq != 1 and vacateTypeSeq != 2">
+				INSERT INTO vacation (vacate_seq,
+				                      emp_id,
+				                      vacate_type_seq,
+				                      vacate_start_dt,
+				                      vacate_end_dt,
+				                      vacate_reason,
+				                      vacate_day_cnt)
+		        VALUES (VACAT_SEQ.nextval,
+		        		#{empId},
+		        		#{vacateTypeSeq},
+		        		to_date(#{vacateStartDt}),
+		        		to_date(#{vacateEndDt}),
+		        		#{vacateReason},
+		        		0)
+			</when>
+			<when test="vacateTypeSeq == 1">
+				INSERT INTO vacation (vacate_seq,
+				                      emp_id,
+				                      vacate_type_seq,
+				                      vacate_start_dt,
+				                      vacate_end_dt,
+				                      vacate_reason,
+				                      vacate_day_cnt)
+		        VALUES (VACAT_SEQ.nextval,
+		        		#{empId},
+		        		#{vacateTypeSeq},
+		        		to_date(#{vacateStartDt}),
+		        		to_date(#{vacateEndDt}),
+		        		#{vacateReason},
+		        		#{vacateDayCnt})
+			</when>
+			<when test="vacateTypeSeq == 2">
+				INSERT INTO vacation (vacate_seq,
+				                      emp_id,
+				                      vacate_type_seq,
+				                      vacate_start_dt,
+				                      vacate_end_dt,
+				                      vacate_reason,
+				                      vacate_day_cnt)
+		        VALUES (VACAT_SEQ.nextval,
+		        		#{empId},
+		        		#{vacateTypeSeq},
+		        		to_date(#{vacateStartDt}),
+		        		to_date(#{vacateEndDt}),
+		        		#{vacateReason},
+		        		0.5)
+			</when>
+		</choose>
+	</insert>
+
+
+
+
+<update id="updateApproval" parameterType="kr.or.ddit.report.vo.ApprovalVO">
+	UPDATE approval
+	<set>
+		check_yn = #{checkYn}
+	</set>
+	<where>
+		and approv_id = #{approvId} 
+	</where>
+</update>
+
+<select id="selectApprovalTotCnt" resultType="Integer" parameterType="kr.or.ddit.report.vo.ApprovalVO">
+SELECT COUNT(*)
+	  FROM approval C, report A, emp B
+	  <where>
+	  	AND C.emp_id = #{empId}
+	  	and C.report_id = A.report_id
+	  	and C.emp_id = B.emp_id
+	  	<if test="checkYn != null and checkYn !=''">
+		  	AND C.check_yn = #{checkYn}	  	
+	  	</if>
+	  	
+	  	<if test="searchKeyword != null and searchKeyword != ''">
+	        <choose>
+	            <when test="searchCondition == 0">
+					AND A.title LIKE '%' || #{searchKeyword} || '%'
+				</when>
+	            <when test="searchCondition == 1">
+					AND	B.emp_nm LIKE '%' || #{searchKeyword} || '%'
+				</when>
+			</choose>
+		</if>
+	  </where>
+</select>
+
+
+
+
+
+
+	<select id="selectApprovLineInfo" parameterType="kr.or.ddit.report.vo.ApprovLineVO" resultType="kr.or.ddit.report.vo.ApprovLineVO">
+		SELECT approv_line_seq,
+			   appr_kind,
+			   emp_id,
+			   appr_curr_emp,
+			   appr_next_emp,
+			   appr_step,
+			   appr_st_code
+		FROM approv_line
+		WHERE emp_id = #{empId}
+		AND appr_kind = #{apprKind}
+		ORDER BY appr_step 
+	</select>
+	
+	
+	
+	
+</mapper>

@@ -1,0 +1,75 @@
+package kr.or.ddit.business.busiboard.vo;
+
+import kr.or.ddit.comm.vo.BaseVO;
+
+public class BusiRepleVO extends BaseVO {
+	
+	private int repleSeq;		//댓글번호
+	private int postSeq;		//게시글번호
+	private String empId;		//댓글작성자
+	private String repleCont;	//댓글내용
+	private String regDt;		//등록일자
+	private String repleSt;		//댓글상태	
+	
+	public BusiRepleVO() {
+	}
+
+	public BusiRepleVO(int repleSeq, int postSeq, String empId, String repleCont, String regDt, String repleSt) {
+		super();
+		this.repleSeq = repleSeq;
+		this.postSeq = postSeq;
+		this.empId = empId;
+		this.repleCont = repleCont;
+		this.regDt = regDt;
+		this.repleSt = repleSt;
+	}
+
+	public int getRepleSeq() {
+		return repleSeq;
+	}
+
+	public void setRepleSeq(int repleSeq) {
+		this.repleSeq = repleSeq;
+	}
+
+	public int getPostSeq() {
+		return postSeq;
+	}
+
+	public void setPostSeq(int postSeq) {
+		this.postSeq = postSeq;
+	}
+
+	public String getEmpId() {
+		return empId;
+	}
+
+	public void setEmpId(String empId) {
+		this.empId = empId;
+	}
+
+	public String getRepleCont() {
+		return repleCont;
+	}
+
+	public void setRepleCont(String repleCont) {
+		this.repleCont = repleCont;
+	}
+
+	public String getRegDt() {
+		return regDt;
+	}
+
+	public void setRegDt(String regDt) {
+		this.regDt = regDt;
+	}
+
+	public String getRepleSt() {
+		return repleSt;
+	}
+
+	public void setRepleSt(String repleSt) {
+		this.repleSt = repleSt;
+	}
+
+}

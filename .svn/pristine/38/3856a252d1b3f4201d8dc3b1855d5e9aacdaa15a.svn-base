@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.salary.dao.SalaryMapperDao">
+
+<select id="getSalaryList" parameterType="kr.or.ddit.salary.vo.SalaryVO" resultType="kr.or.ddit.salary.vo.SalaryVO">
+	SELECT
+    salary_seq,
+    emp_id,
+    salary_dt,
+    salary_amt
+FROM
+    salary
+    <where>
+  		<if test="empId != null">
+			and emp_id = #{empId} 
+  		</if>
+  	</where>
+</select>
+
+<select id="getSalary" parameterType="kr.or.ddit.salary.vo.SalaryVO" resultType="kr.or.ddit.salary.vo.SalaryVO">
+	SELECT
+    salary_seq,
+    emp_id,
+    salary_dt,
+    salary_amt
+FROM
+    salary
+where salary_dt = #{salaryDt} and emp_id = #{empId} 
+</select>
+
+
+<select id="getMonthSalary" parameterType="java.util.HashMap" resultType="java.lang.String">
+<![CDATA[
+select NVL(ROUND(A.jobtitle_money +D.ddd,-3),A.jobtitle_money) as jobtile_money
+from job_money A, 
+(select
+SUM(
+CASE WHEN (TO_DATE(C.home_time,'HH24:MI:SS')-TO_DATE(180000,'HH24:MI:SS'))>0 THEN (TO_DATE(C.home_time,'HH24:MI:SS')-TO_DATE(180000,'HH24:MI:SS'))*24
+WHEN (TO_DATE(C.home_time,'HH24:MI:SS')-TO_DATE(180000,'HH24:MI:SS'))*24<=0 THEN 0 END)*30000 AS ddd from attend C WHERE C.EMP_ID = #{empId} AND TO_CHAR(C.ATTEND_DT, 'YYYY-MM-DD') like #{month}||'%')
+D
+where A.jobtitle_id in (select B.jobtitle_id
+                        from emp B
+                        where B.emp_id =#{empId})
+and jobtitle_mo_id in (select max(A.jobtitle_mo_id) from job_money A where A.jobtitle_id in (select B.jobtitle_id
+                        from emp B
+                        where B.emp_id = #{empId}))
+]]>
+</select>
+
+<select id="selectAllId" resultType="java.lang.String">
+select emp_id from emp where emp_quit_yn = 'N'
+</select>
+
+<insert id="salaryCal" parameterType="kr.or.ddit.salary.vo.SalaryVO">
+insert into salary(salary_seq, emp_id, salary_dt, salary_amt, salary_st)
+values(salary_seq.nextval, #{empId}, #{salaryDt}||'-19', #{salaryAmt}, 'N')
+</insert>
+
+<select id="selectMonList" resultType="kr.or.ddit.salary.vo.SalaryReVO" parameterType="kr.or.ddit.salary.vo.SalaryVO">
+select b.*
+    from(SELECT a.*, rownum as rn
+        FROM(select            
+                empT.emp_nm, deptT.dept_name, jobT.jobtitle_nm, TO_CHAR(salaryT.salary_amt,'999,999,999,999') as salary_amt, TO_CHAR(salaryT.salary_dt,'YYYY-MM-DD') as salary_dt,
+                CASE WHEN salaryT.salary_st = 'Y' THEN '지급'
+                WHEN salaryT.salary_st = 'N' THEN '미지급' END as salary_st
+                
+                from (select * from emp) empT,
+                     (select * from dept) deptT,
+                     (select * from salary) salaryT,
+                     (select * from job_title) jobT
+                     
+                where empT.dept_id = deptT.dept_id and empT.emp_id = salaryT.emp_id and empT.jobtitle_id = jobT.jobtitle_id 
+                and TO_CHAR(salaryT.salary_dt,'YYYY-MM-DD') like #{salaryDt}||'%'
+                ORDER BY empT.emp_nm asc) a) b
+WHERE rn between (#{pageIndex}-1) * #{recordCountPerPage} + 1 and #{pageIndex} * #{recordCountPerPage}
+</select>
+
+<select id="selectCnt" parameterType="kr.or.ddit.salary.vo.SalaryVO" resultType="java.lang.Integer">
+	SELECT COUNT(*) FROM SALARY
+	WHERE TO_CHAR(salary_dt,'YYYY-MM-DD') like #{salaryDt}||'%'
+</select>
+
+<select id="selectMonExcel" parameterType="kr.or.ddit.salary.vo.SalaryVO" resultType="kr.or.ddit.salary.vo.SalaryReVO">
+select            
+                empT.emp_nm, deptT.dept_name, jobT.jobtitle_nm, TO_CHAR(salaryT.salary_amt,'999,999,999,999') as salary_amt, TO_CHAR(salaryT.salary_dt,'YYYY-MM-DD') as salary_dt
+             
+                
+                from (select * from emp) empT,
+                     (select * from dept) deptT,
+                     (select * from salary) salaryT,
+                     (select * from job_title) jobT
+                     
+                where empT.dept_id = deptT.dept_id and empT.emp_id = salaryT.emp_id and empT.jobtitle_id = jobT.jobtitle_id 
+                and TO_CHAR(salaryT.salary_dt,'YYYY-MM-DD') like #{salaryDt}||'%'
+                ORDER BY empT.emp_nm asc
+</select>
+<update id="salaryStUpdate" parameterType="kr.or.ddit.salary.vo.SalaryReVO">
+	update salary
+	set salary_st = 'Y'
+	where TO_CHAR(salary_dt,'YYYY-MM-DD') like #{salaryDt}||'%'
+</update>
+
+<select id="selectBasicSal" parameterType="java.lang.String" resultType="java.lang.String">
+SELECT A.jobtitle_money
+FROM job_money A
+where A.jobtitle_id in (select B.jobtitle_id
+                        from emp B
+                        where B.emp_id =#{empId})
+and jobtitle_mo_id in (select max(A.jobtitle_mo_id) from job_money A where A.jobtitle_id in (select B.jobtitle_id
+                        from emp B
+                        where B.emp_id = #{empId}))
+</select>
+
+<select id="selectEmpMonthSalary" parameterType="kr.or.ddit.salary.vo.SalaryVO" resultType="kr.or.ddit.salary.vo.SalaryReVO">
+	select
+		empT.emp_nm, deptT.dept_name, jobT.jobtitle_nm,
+		salaryT.salary_amt,
+		TO_CHAR(salaryT.salary_dt,'YYYY-MM-DD') as salary_dt
+
+	from (select * from emp) empT,
+		(select * from dept) deptT,
+		(select * from salary) salaryT,
+		(select * from job_title) jobT
+
+	where empT.dept_id = deptT.dept_id and empT.emp_id = salaryT.emp_id and
+		empT.jobtitle_id = jobT.jobtitle_id
+		and TO_CHAR(salaryT.salary_dt,'YYYY-MM-DD') like #{month}||'%'
+		and empT.emp_id = #{empId}
+</select>
+
+
+</mapper>

@@ -1,0 +1,244 @@
+package kr.or.ddit.report.dao;
+
+import java.util.List;
+
+import egovframework.rte.psl.dataaccess.mapper.Mapper;
+import kr.or.ddit.report.vo.ApprovLineCounterVO;
+import kr.or.ddit.report.vo.ApprovLineListVO;
+import kr.or.ddit.report.vo.ApprovLineVO;
+import kr.or.ddit.report.vo.ApprovalVO;
+import kr.or.ddit.report.vo.ReportFileVO;
+import kr.or.ddit.report.vo.ReportSignVO;
+import kr.or.ddit.report.vo.ReportTypeVO;
+import kr.or.ddit.report.vo.ReportVO;
+import kr.or.ddit.report.vo.SubWorkerVO;
+import kr.or.ddit.vacation.vo.VacatTypeVO;
+import kr.or.ddit.vacation.vo.VacationVO;
+
+@Mapper("reportMapperDao")
+public interface ReportMapperDao {
+	
+	
+	List<ReportVO> getRepostList(ReportVO reportVo) throws Exception;
+
+	int selectReportTotCnt(ReportVO reportVo) throws Exception;
+	
+	/**
+	 * db에 저장된 모든 기안문 양식을 가져오는 메서드
+	 * @return	기안문 양식 리스트
+	 * @throws Exception
+	 */
+	List<ReportTypeVO> selectReportTypeList() throws Exception;
+
+	/**
+	 * 사원이 등록한 결재선 리스트
+	 * @param approvLineVo		사원의 사원번호를 담은 VO객체
+	 * @return				결재선 리스트
+	 * @throws Exception
+	 */
+	List<ApprovLineVO> selectApprovLineList(String empId) throws Exception;
+
+	/**
+	 * 결재선 이름별 결재 횟수
+	 * @param approvLineVo			사원의 사원번호를 담은 VO객체
+	 * @return				결재선 이름과 결재 횟수 정보를 담고 있는 VO객체 리스트
+	 * @throws Exception
+	 */
+	List<ApprovLineCounterVO> selectApprLineCounterList(String empId) throws Exception;
+
+	/**
+	 * 선택한 결재선을 db로부터 가져오는 메서드
+	 * @param approvLineVo		결재선의 이름 정보를 담은 ApprovLineVO 객체
+	 * @return					결재선 정보
+	 */
+	List<ApprovLineVO> selectApprovLine(ApprovLineVO approvLineVo) throws Exception;
+
+	/**
+	 * 사용자가 설정한 결재선을 db에 저장하는 메서드
+	 * @param approvLineListVo		사용자가 설정한 결재선 정보
+	 * @return						추가된 로우 카운트
+	 * @throws Exception
+	 */
+	int insertApprovLine(ApprovLineListVO approvLineListVo) throws Exception;
+
+	/**
+	 * 기안서 양식 번호를 입력받아 기안서 양식 정보를 가져오는 메서드
+	 * @param reportVo			기안서 양식 번호를 담고 있는 ReportVO 객체
+	 * @return					기안서 양식 정보를 담고 있는 ReportTypeVo 객체
+	 * @throws Exception
+	 */
+	ReportTypeVO selectReportType(ReportVO reportVo) throws Exception;
+
+	/**	기안서 작성 기본 정보를 db에 저장하는 메서드
+	 * @param reportVo		기안서 기본 정보를 db에 저장
+	 */
+	void insertReport(ReportVO reportVo) throws Exception;
+
+	/**
+	 * db에 저장되어 있는 기안서 정보를 가져오는 메서드
+	 * @param reportVo			기안서 기안 번호를 담고 있는 ReportVO 객체
+	 * @return					기안서 정보를 담고 있는 ReportVO 객체
+	 * @throws Exception
+	 */
+	ReportVO selectReport(ReportVO reportVo) throws Exception;
+
+	/**
+	 * 사용자가 작성한 기안 정보로 기안서를 수정하는 메서드
+	 * @param reportVo			사용자가 작성한 기안서정보를 담고 있는 ReportVO객체			
+	 * @throws Exception		
+	 */
+	void updateReport(ReportVO reportVo) throws Exception;
+
+	/**
+	 * 사용자의 사인 정보를 db에 등록하는 메서드
+	 * @param reportVo		사용자가 작성한 기안서정보를 담고 있는 ReportVO객체
+	 * @throws Exception
+	 */
+	void insertReportSign(ReportVO reportVo) throws Exception;
+
+	/**
+	 * 기안서의 첨부파일을 db에 등록하는 메서드
+	 * @param reportVo			사용자가 작성한 기안서정보를 담고 있는 ReportVO객체
+	 * @throws Exception
+	 */
+	void insertReportFileList(ReportVO reportVo) throws Exception;
+
+	/**
+	 * 기안서의 사인 정보를 가져오는 메서드
+	 * @param reportVo		기안서 정보를 담고 있는 ReportVO객체
+	 * @return 				사인 리스트
+	 * @throws Exception
+	 */
+	List<ReportSignVO> selectSignList(ReportVO reportVo) throws Exception;
+
+	/**
+	 * 기안서의 파일 정보를 가져오는 메서드
+	 * @param reportVo		기안서 정보를 담고 있는 ReportVO객체
+	 * @return 				파일리스트
+	 * @throws Exception
+	 */
+	List<ReportFileVO> selectReportFileList(ReportVO reportVo) throws Exception;
+
+	/**
+	 *	결재자가 결재해야할 기안서 목록을 가져오는 메서드
+	 * @param reportVo			결재자 정보가 들어있는 메서드
+	 * @return					기안서 목록
+	 * @throws Exception
+	 */
+	List<ReportVO> selectReportList(ReportVO reportVo) throws Exception;
+
+	/**
+	 * 결재 등록
+	 * @param approvalVo	결재정보를 담은  ApprovalVO객체
+	 * @throws Exception
+	 */
+	void insertApproval(ApprovalVO approvalVo) throws Exception;
+
+	/**
+	 * 기안문서에 대한 결재내역을 가져오는 메서드
+	 * @param report			기안문서 정보를 담고 있는 ReportVO객체
+	 * @return					결재내역 리스트
+	 * @throws Exception
+	 */
+	List<ApprovalVO> selectApprovalList(ReportVO report) throws Exception;
+
+	/**
+	 * 파일 다운로드
+	 * @param reportFileVo		파일의 아이디를 담고 있는  VO객체
+	 * @return					파일
+	 * @throws Exception
+	 */
+	ReportFileVO selectReportFile(ReportFileVO reportFileVo) throws Exception;
+	
+	/**
+	 * 사원의 사인정보를 가져오는 메서드
+	 * @param report			사원의 정보를 담고있는 VO객체
+	 * @return					사인 정보
+	 * @throws Exception
+	 */
+	String selectEmpSign(ReportVO report) throws Exception;
+
+	
+	
+	
+	/**
+	 * 해당 기안이 전부 통과 후 기안의 type이 휴가일 경우 자동으로 휴가 처리하는 메서드
+	 * @param vacateVO			사원의 휴가정보를 담고있는 임시 VO객체
+	 */
+	void insertVacationInfo(VacationVO vacateVO) throws Exception;
+
+	/**
+	 * 결재자가 결재후에 결재사안을 읽었으면 결재 확인 속성을 읽었음으로 업데이트
+	 * @param approvalVO		결재 정보
+	 */
+	void updateApproval(ApprovalVO approvalVO);
+	
+	
+	/**
+	 * 결재자의 미확인 결재 건수
+	 * @param approvalVo		결재 정보
+	 * @return					미확인 결재 건수
+	 */
+	int selectApprovalTotCnt(ApprovalVO approvalVo);
+
+	
+	/**
+	 * 해당 기안의 결재라인 정보를 반환하는 메서드
+	 * @param tempApprovLineVo
+	 * @return
+	 * @throws Exception
+	 */
+	List<ApprovLineVO> selectApprovLineInfo(ApprovLineVO tempApprovLineVo) throws Exception;
+
+	
+	
+	
+	/**
+	 * 주말을 제외한 휴가일수 계산
+	 * @param vacateVO
+	 * @return
+	 * @throws Exception
+	 */
+	int selectVacateDayCnt(VacationVO vacateVO) throws Exception;
+
+	
+	
+	
+	/**
+	 * 해당 휴가 기안서의 휴가 종류
+	 * @param dbReport
+	 * @return
+	 * @throws Exception
+	 */
+	VacatTypeVO selectVacateTypeInfo(ReportVO dbReport) throws Exception;
+
+	/**
+	 * 휴가신청서가 최종 결재자에 의하여 승인 처리 되었을 때 대리근무자 정보를 db에 저장.
+	 * @param subWorker		대리근무자 정보를 담고 있는 SubWorkerVO 객체
+	 * @throws Exception
+	 */
+	void insertSubWorker(SubWorkerVO subWorker) throws Exception;
+
+	/**
+	 * 금일 날짜에 해당하는 대리근무 정보를 가져오는 메서드
+	 * @param subWorker			대리근무 정보를 담고 있는 SubWorkerVO 객체
+	 * @return					대리근무정보
+	 * @throws Exception
+	 */
+	SubWorkerVO selectSubWorker(SubWorkerVO subWorker) throws Exception;
+
+	/** 대리 근무 정보를 수정하는 메서드
+	 * @param subWorkerResult	대리근무 정보를 담고 있는 SubWorkerVO 객체
+	 * @throws Exception
+	 */
+	void updateSubWorker(SubWorkerVO subWorkerResult) throws Exception;
+	
+	/**
+	 * 해당 사원의 사직서 기안이 적용되는 메서드
+	 * @param dbReport
+	 * @throws Exception
+	 */
+//	void EmpQuitComp(ReportVO dbReport) throws Exception;
+	
+	
+}

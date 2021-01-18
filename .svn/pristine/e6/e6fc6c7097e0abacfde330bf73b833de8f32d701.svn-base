@@ -1,0 +1,658 @@
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+    pageEncoding="UTF-8"%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<link rel="stylesheet" href="http://code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css">
+<!-- <script type="text/javascript" src="http://code.jquery.com/jquery-latest.min.js"></script> -->
+<script src="http://code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
+<link rel="preconnect" href="https://fonts.gstatic.com">
+<link href="https://fonts.googleapis.com/css2?family=Nanum+Gothic&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sockjs-client/1.4.0/sockjs.js"></script>
+<script>
+
+	chatRoomId = "";
+	chatRoomName = "";
+	chatShowStatus = false;
+	chatNewArr = [];
+	chatAlarmArr = [];
+	
+	chatClickCnt = 0;
+	
+	// 현재 접속한 채팅방id
+	currChatRoomId = "";
+
+
+	// 웹소켓 알림 전역 변수
+	var socket = null;
+	$(document).ready(function(){
+		
+		
+		// 소켓 연결 시작
+		connectWs();
+		
+		$.ajax({
+			
+			url : "/mail/count",
+			dataType : "json",
+			method : "post",
+			success : function(data){
+				$("#mailCountSpan").text(parseInt(data.cnt));
+			}
+		})
+		
+		
+		// 알람 정보 리스트 함수
+		selectAlarmEmp();
+		
+		$("#alertsDropdown2").on("click", function() {
+			document.location = "/address";
+		});
+		
+		$("#headerAddressBook").on("click", function(){
+			document.location = "/address";
+		});
+	});
+	
+	
+	
+	
+	
+	
+	
+	// 웹소켓 연결을 통한 알림 함수
+	function connectWs() {
+		sock = new SockJS("<c:url value='/socketAlamn'/>");
+		socket = sock;
+
+		// socket 시작
+		sock.onopen = function() {
+			console.log('info: connection opened.');
+		};
+
+		// 소켓통신이 시작되면 java단의 handler에서 socket list에 저장된 모든 사람에게
+		// 메시지를 전달 ==> afterConnectionEstablished() 메서드
+		// afterConnectionEstablished() 메서드 실행시 보내진 데이터를 evt라는 변수로 활용
+		sock.onmessage = function(evt) {
+			
+			console.log("evt : ", evt)
+			
+			var myAlarmCnt = 0;
+			
+			// 알람 정보 리스트 함수
+			selectAlarmEmp();
+		};
+
+		sock.onclose = function() {
+			console.log('connect close');
+			/* setTimeout(function(){conntectWs();} , 1000); */
+		};
+
+		sock.onerror = function(err) {
+			console.log('Errors : ', err);
+		};
+		sendMessage = function(str) {
+			console.log(str);
+			this.socket.send(str);
+		}
+	}
+	
+	
+	$(function(){
+		
+
+		// 알람 전체 지우기
+		$("#alarmAllDel").on("click", function(){
+			$.ajax({
+				url : "/alarm/alarmAllDel",
+				method : "post",
+				success : function(data) {
+					var alarmTag = "<div><br><h6 style='text-align : center;'><strong>알람이 없습니다</strong></h6></div>"
+					$("#alamnListDiv").html(alarmTag);
+	 				$("#alarmCntSpan").text(parseInt(0));
+				},
+				error	: function(error){
+					alert("error 발생 : ", error.status);
+				}
+			});
+		});
+		
+		// 알람 선택 클릭시 확인했다는 상태로 변경
+		$('#alamnListDiv').on('click','.dropdown-item',function(){
+			var alarmSeq = $(this).attr('id')
+			
+			$.ajax({
+				url : "/alarm/alarmReadCheck",
+				method : "post",
+				data : { alarmSeq : alarmSeq },
+				success : function(data){
+					
+					// 알람 정보 리스트 함수
+					selectAlarmEmp();
+				}
+			});		
+
+			var alarmtype = $(this).data("alarmtype");
+			var alarmLinkCont = $(this).data("alarmlink");
+			var chatTF = false;
+			
+			if(alarmtype == "post" || alarmtype == "voteEmp"){
+				document.location = alarmLinkCont;
+			}
+		});
+		
+		
+
+
+
+
+
+
+
+
+		
+		$('#memoDropdown').on('click',function(){
+			
+			$.ajax({
+				url : "/memo/View",
+				method : "post",
+				success : function(data) {
+					
+					var html = "";
+					
+					for(var i=0;i<data.memoList.length;i++){
+						
+						var memo = data.memoList[i]
+                        
+                        html += "<a class='dropdown-item d-flex align-items-center' href='#' id="+memo.memoSeq+">";
+                        html += "<div>"
+						html += "<div class='small text-gray-500'>";
+						html += memo.regDt;
+						html += "</div><span class='font-weight-bold' style='font-size : 1.2em;'>";
+						html += memo.content.substring(0,17);
+						html += "</span>";
+						html += "<span><br>더 보기</span>"
+						html += "</div>";
+						html += "</a>";
+					}
+					
+					if(data.memoList.length == 0){
+						html += "<br><h6 style='text-align : center;'><strong>작성된 메모가 없습니다</strong></h6>"
+					}
+					
+					$('#memoList').html(html)
+				}
+			});
+			
+		})
+		
+		$('#messagesDropdown').on('click',function(){
+			
+			
+			$.ajax({
+				url : "/mail/list5",
+				method : "post",
+				success : function(data) {
+					
+					var html = "";
+					
+					for(var i=0;i<data.MailList.length;i++){
+						
+						var mail = data.MailList[i]
+						
+						html += "<a class='dropdown-item d-flex align-items-center' href='#' id="+mail.mailSeq+">";
+                        html += "<div class='dropdown-list-image mr-3'>"
+                        html += "<img class='rounded-circle' src='/profileImgView?empId="
+                  		html += mail.sender;
+                    	html += "' alt=''>";
+                        html += "</div>";
+                        if(mail.mailCnt == "N"){
+	                        html += "<div class='font-weight-bold'><div class='text-truncate' style='color : blue;'>";
+	                        html += mail.title;
+	                        html += "</div>"
+                        } else {
+	                        html += "<div class='font-weight-bold'><div class='text-truncate'>";
+	                        html += mail.title;
+	                        html += "</div>"
+                        }
+                        html += "<div class='small text-gray-500'>"
+                        html += mail.mailSendTime;
+                        html += " / ";
+                        html += mail.sender;
+                        html += "@sendbox.com";
+                        html += "</div></div>"
+						html += "</a>";
+					}
+					
+					if(data.MailList.length == 0){
+						
+						html += "<br><h6 style='text-align : center;'><strong>메일이 없습니다</strong></h6>"
+					}
+					
+					$('#mailDiv').html(html)
+				}
+			});
+			
+		})
+		
+	
+		$('#mailDiv').on('click','.dropdown-item',function(){
+			var mailSeq = $(this).attr('id')
+			$.ajax({
+				url : "/mail/read",
+				method : "post",
+				data : {
+					mailSeq : mailSeq
+				},
+				success : function(data){
+					window.location.href = "/mail/detail?mailSeq=" + mailSeq
+				}
+			})			
+		})
+		
+		
+		
+		
+			
+			
+			$('#memoList').on('mousedown', '.dropdown-item' ,function(e){
+				var memoSeq = $(this).attr('id')
+				$('#memoNo').val(memoSeq)
+				if(e.which == 1){
+					memoDetail(memoSeq);
+				} else if(e.which == 3){
+					$(this).contextmenu(function(e){
+					    //Get window size:
+					    var winWidth = $(document).width();
+					    var winHeight = $(document).height();
+					    //Get pointer position:
+					    var posX = e.pageX;
+					    var posY = e.pageY;
+					    //Get contextmenu size:
+					    var menuWidth = $(".contextmenu").width();
+					    var menuHeight = $(".contextmenu").height();
+					    //Security margin:
+					    var secMargin = 10;
+					    //Prevent page overflow:
+					    if(posX + menuWidth + secMargin >= winWidth
+					    && posY + menuHeight + secMargin >= winHeight){
+					      //Case 1: right-bottom overflow:
+					      posLeft = posX - menuWidth - secMargin + "px";
+					      posTop = posY - menuHeight - secMargin + "px";
+					    }
+					    else if(posX + menuWidth + secMargin >= winWidth){
+					      //Case 2: right overflow:
+					      posLeft = posX - menuWidth - secMargin + "px";
+					      posTop = posY + secMargin + "px";
+					    }
+					    else if(posY + menuHeight + secMargin >= winHeight){
+					      //Case 3: bottom overflow:
+					      posLeft = posX + secMargin + "px";
+					      posTop = posY - menuHeight - secMargin + "px";
+					    }
+					    else {
+					      //Case 4: default values:
+					      posLeft = posX + secMargin + "px";
+					      posTop = posY + secMargin + "px";
+					    };
+					    //Display contextmenu:
+					    $(".contextmenu").css({
+					      "left": posLeft,
+					      "top": posTop
+					    }).show();
+					    //Prevent browser default contextmenu.
+					    return false;
+					  });
+					  //Hide contextmenu:
+					  $(document).click(function(){
+					    $(".contextmenu").hide();
+					  });
+				}
+			})
+			
+	})
+	
+	function mailWrite(){
+		
+		window.location.href = "/mail/write";
+	}
+	
+	function showMemo(){
+		$('#pop').draggable();
+		$('#memo').val('');
+		$('#pop').show();
+		
+		$.ajax({
+			url : "/memo/write",
+			method : "post",
+			success : function(data) {
+				$('#memoNo').val(data.memoSeq)
+			}
+		});
+	
+	}
+	
+	function memoWrite(){
+		$('#pop').hide();
+		var memo = $('#memo').val();
+		var memoSeq = $('#memoNo').val();
+		
+		
+		$.ajax({
+			url : "/memo/update",
+			method : "post",
+			data : {
+				content : memo,
+				memoSeq : memoSeq
+			},
+			success : function(data) {
+				$('#memo').val('');
+			}
+		});
+	}
+	
+	function memoDetail(memoSeq){
+		$.ajax({
+			url : "/memo/detail",
+			method : "post",
+			data : {
+				memoSeq : memoSeq
+			},
+			success : function(data) {
+				$('#pop').show();
+				$('#memo').val(data.detail.content);
+				$('#pop').draggable();
+			}
+		});
+	}
+	
+	function memoDelete(memoSeq){
+		$.ajax({
+			url : "/memo/delete",
+			method : "post",
+			data : {
+				memoSeq : memoSeq
+			},
+			success : function(data) {
+				$('#pop').hide();
+			}
+		});
+	}
+	
+</script>
+<style>
+::-webkit-scrollbar {width: 2px; height: 12px;  }
+
+::-webkit-scrollbar-button:start:decrement, 
+
+::-webkit-scrollbar-button:end:increment {display: block; width: 12px;height: 12px; background: url() rgba(0,0,0,.05);}
+
+::-webkit-scrollbar-track {  background:rgba(0,0,0, 0.9)  /* background:#000;  rgba(0,0,0,.0.8);*/ }
+
+
+::-webkit-scrollbar-thumb { background:rgba(255,255,255, 0.9)/* background:#fff  rgba(0,0,0,.1);*/  }
+	
+	#pop{
+		background-color : #FFFF7E;	
+	}
+	
+	#memo{
+		resize: none;
+/* 		overflow : hidden; */
+		border : none;
+		outline : none;
+		background-color : #FFFF7E;
+	}
+	
+	.contextmenu {
+ 	  display: none; 
+	  position: absolute;
+	  width: 200px;
+	  margin: 0;
+	  padding: 0;
+	  background: #FFFFFF;
+	  border-radius: 5px;
+	  list-style: none;
+	  box-shadow:
+	    0 15px 35px rgba(50,50,90,0.1),
+	    0 5px 15px rgba(0,0,0,0.07);
+	  overflow: hidden;
+	  z-index: 999999;
+	}
+	
+	.contextmenu li {
+	  border-left: 3px solid transparent;
+	  transition: ease .2s;
+	}
+	
+	.contextmenu li a {
+	  display: block;
+	  padding: 10px;
+	  color: black;
+	  text-decoration: none;
+	  transition: ease .2s;
+	}
+	
+	.contextmenu li:hover {
+	  background: #adadad;
+	  border-left: 3px solid #404040;
+	}
+	
+	.contextmenu li:hover a {
+	  color: #FFFFFF;
+	}
+	@font-face {
+    font-family: 'InfinitySans-RegularA1';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_20-04@2.1/InfinitySans-RegularA1.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+}
+body{
+  font-family: 'InfinitySans-RegularA1';
+}
+	
+</style>
+
+<body>
+   				<!-- Topbar -->
+                <nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
+
+                    <!-- Sidebar Toggle (Topbar) -->
+                    <button id="sidebarToggleTop" class="btn btn-link d-md-none rounded-circle mr-3">
+                        <i class="fa fa-bars"></i>
+                    </button>
+
+<!--                     Topbar Search -->
+<!--                     <form -->
+<!--                         class="d-none d-sm-inline-block form-inline mr-auto ml-md-3 my-2 my-md-0 mw-100 navbar-search"> -->
+<!--                         <div class="input-group"> -->
+<!--                             <input type="text" class="form-control bg-light border-0 small" placeholder="Search for..." -->
+<!--                                 aria-label="Search" aria-describedby="basic-addon2"> -->
+<!--                             <div class="input-group-append"> -->
+<!--                                 <button class="btn btn-primary" type="button"> -->
+<!--                                     <i class="fas fa-search fa-sm"></i> -->
+<!--                                 </button> -->
+<!--                             </div> -->
+<!--                         </div> -->
+<!--                     </form> -->
+
+                    <!-- Topbar Navbar -->
+                    <ul class="navbar-nav ml-auto">
+
+                        <!-- Nav Item - Search Dropdown (Visible Only XS) -->
+                        <li class="nav-item dropdown no-arrow d-sm-none">
+                            <a class="nav-link dropdown-toggle" href="#" id="searchDropdown" role="button"
+                                data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                <i class="fas fa-search fa-fw"></i>
+                            </a>
+                            <!-- Dropdown - Messages -->
+                            <div class="dropdown-menu dropdown-menu-right p-3 shadow animated--grow-in"
+                                aria-labelledby="searchDropdown">
+                                <form class="form-inline mr-auto w-100 navbar-search">
+                                    <div class="input-group">
+                                        <input type="text" class="form-control bg-light border-0 small"
+                                            placeholder="Search for..." aria-label="Search"
+                                            aria-describedby="basic-addon2">
+                                        <div class="input-group-append">
+                                            <button class="btn btn-primary" type="button">
+                                                <i class="fas fa-search fa-sm"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </li>
+                        
+                          <!-- 주소록 아이콘 -->
+                        <li class="nav-item dropdown no-arrow mx-1">
+                            <a id="headerAddressBook" class="nav-link dropdown-toggle" href="#" id="alertsDropdown" role="button"
+                                data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                <i class="fas fa-address-book fa-fw"></i>
+                                <!-- Counter - Alerts -->
+                                <span class="badge badge-danger badge-counter"></span>
+                            </a>
+                        </li>
+                        
+                        
+                          <!-- 스티커메모 아이콘 -->
+                        <li class="nav-item dropdown no-arrow mx-1">
+                            <a class="nav-link dropdown-toggle" href="#" id="memoDropdown" role="button"
+                                data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                <i class="fas fa-edit fa-fw"></i>
+                                <!-- Counter - Alerts -->
+                                <span class="badge badge-danger badge-counter"></span>
+                            </a>
+                         <div class="dropdown-list dropdown-menu dropdown-menu-right shadow animated--grow-in"
+                                aria-labelledby="alertsDropdown" style="overflow : scroll; max-height : 350px; overflow-x : hidden;">
+                                <h6 class="dropdown-header" style="background-color : #b5b5b5; border : none;">
+                                	MEMO
+                                	<a href="#" onclick="showMemo()">
+                                	<input id="memoNo" type="hidden" value=''>
+                                	<i class="fas fa-plus" style="float : right; color : white;"></i>
+                                	</a>
+                                </h6>
+                                    <div id="memoList">
+                                    </div>
+                                    <a class="dropdown-item text-center small text-gray-500" href="#"></a>
+                            </div>   
+                        </li>
+
+                        <!-- 알림 -->
+                        <li class="nav-item dropdown no-arrow mx-1">
+                            <a class="nav-link dropdown-toggle" href="#" id="alertsDropdown" role="button"
+                                data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                <i class="fas fa-bell fa-fw"></i>
+                                
+                                <!-- 알림 숫자 -->
+                                <span id="alarmCntSpan" class="badge badge-danger badge-counter"></span>
+                            </a>
+                            <!-- Dropdown - Alerts -->
+                            <div class="dropdown-list dropdown-menu dropdown-menu-right shadow animated--grow-in"
+                                aria-labelledby="alertsDropdown">
+                                
+                                <!-- 알림 상단바 -->
+                                <h6 class="dropdown-header" style="background-color: #b5b5b5; border: none;">Alamn</h6>
+                                
+                                <!-- 알람 내용 append area -->
+                                <div id="alamnListDiv"></div>
+                                
+                                <a id="alarmAllDel" class="dropdown-item text-center small text-gray-500" href="#">전체지우기</a>
+                            </div>
+                        </li>
+
+                        <!-- Nav Item - Messages -->
+                        <li class="nav-item dropdown no-arrow mx-1">
+                            <a class="nav-link dropdown-toggle" href="#" id="messagesDropdown" role="button"
+                                data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                <i class="fas fa-envelope fa-fw"></i>
+                                <!-- Counter - Messages -->
+                                <span id="mailCountSpan" class="badge badge-danger badge-counter"></span>
+                            </a>
+                            <!-- Dropdown - Messages -->
+                            <div class="dropdown-list dropdown-menu dropdown-menu-right shadow animated--grow-in"
+                                aria-labelledby="messagesDropdown">
+                                <h6 class="dropdown-header" style="background-color: #b5b5b5; border: none;">
+                                    Mail
+                                    <a href="#" onclick="mailWrite()">
+                                	<i class="fas fa-plus" style="float : right; color : white;"></i>
+                                	</a>
+                                </h6>
+                                <div id="mailDiv">
+                                
+                                </div>
+                                <a class="dropdown-item text-center small text-gray-500" href="/mail/list">메일 더보기</a>
+                            </div>
+                        </li>
+
+                        <div class="topbar-divider d-none d-sm-block"></div>
+
+                        <!--마이페이지 아이콘 -->
+                        <li class="nav-item dropdown no-arrow mx-1">
+                            <a class="nav-link dropdown-toggle" href="#" id="userDropdown" role="button"
+                                data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                <span class="mr-2 d-none d-lg-inline text-gray-600 small">${EMP.empNm}
+	                                <c:if test="${EMP.jobtitleId == 0}">사원</c:if>
+				                    <c:if test="${EMP.jobtitleId == 1}">대리</c:if>
+				                    <c:if test="${EMP.jobtitleId == 2}">팀장</c:if>
+				                    <c:if test="${EMP.jobtitleId == 3}">부장</c:if>
+				                    <c:if test="${EMP.jobtitleId == 4}">CEO</c:if>
+                                </span>
+<!--                                 <img class="img-profile rounded-circle" -->
+<%--                                     src="${pageContext.request.contextPath}/admin2form/img/undraw_profile.svg"> --%>
+								                                <i class="fas fa-user fa-fw"></i>
+								                                
+								                                
+
+
+
+
+                            </a>
+                            <!-- Dropdown - User Information -->
+                            <div class="dropdown-menu dropdown-menu-right shadow animated--grow-in"
+                                aria-labelledby="userDropdown">
+                                <a class="dropdown-item" href="/mypage?empId=${EMP.empId}">
+                                    <i class="fas fa-user fa-sm fa-fw mr-2 text-gray-400"></i>
+                                    	마이페이지
+                                </a>
+                                
+                                <a class="dropdown-item" href="/myattend?empId=${EMP.empId}">
+                                    <i class="fas fa-fw fa-clock fa-sm fa-fw mr-2 text-gray-400"></i>
+                                    	근태조회
+                                </a>
+                                
+                                <a class="dropdown-item" href="/vacate/myVacatePage">
+                                    <i class="fas fa-fw fa-calendar-alt fa-sm fa-fw mr-2 text-gray-400"></i>
+                                    	연차조회
+                                </a>
+                                
+                                <jsp:useBean id="now" class="java.util.Date" />
+                                <fmt:formatDate value="${now}" pattern="yyyy" var="year"/>
+                                <fmt:formatDate value="${now}" pattern="MM" var="month"/>
+                                <a class="dropdown-item" href="/salary/specification?year=${year }&month=${month }">
+                                    <i class="fas fa-money-check-alt fa-sm fa-fw mr-2 text-gray-400"></i>
+                                    	급여조회
+                                </a>
+                                
+                                <div class="dropdown-divider"></div>
+                                <a class="dropdown-item" href="#" data-toggle="modal" data-target="#logoutModal">
+                                    <i class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i>
+                                   		 로그아웃
+                                </a>
+                            </div>
+                        </li>
+
+                    </ul>
+
+                </nav>
+                <!-- End of Topbar -->
+                
+<div id="pop" style="position:absolute; left:1200px; top:70px; width:300px; height:300px; z-index:99; display: none;">
+<div id="popheader" style="width : 290px;"><a href="#" onclick="memoWrite()"><i class="fas fa-times" style="float : right; font-size : 30px;"></i></a></div>
+<textarea id="memo" style="width : 270px; height : 250px; margin-left : 20px;">
+</textarea>
+</div>
+
+
+	<ul class="contextmenu">
+	  <li><a href="#" onclick="memoDetail($('#memoNo').val())">메모 열기</a></li>
+	  <li><a href="#" onclick="memoDelete($('#memoNo').val())">메모 삭제</a></li>
+	</ul>

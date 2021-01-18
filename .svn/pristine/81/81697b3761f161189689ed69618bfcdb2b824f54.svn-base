@@ -1,0 +1,137 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.address.dao.AddrMapperDao">
+
+<select id="retrieveAddrList" parameterType="kr.or.ddit.address.vo.AddrEmpVO" resultType="kr.or.ddit.address.vo.AddrEmpVO">
+	SELECT b.*
+	FROM(SELECT
+            rownum as rn,
+            a.*
+        FROM ( select *
+                from emp
+                WHERE EMP_QUIT_YN = 'N'
+				<if test='standard == "가"'>
+					<![CDATA[ AND (emp_nm >= '가' AND emp_nm < '나')]]>
+				</if>
+				<if test='standard == "나"'>
+					<![CDATA[ AND (emp_nm >= '나' AND emp_nm < '다')]]>
+				</if>
+				<if test='standard == "다"'>
+					<![CDATA[ AND (emp_nm >= '다' AND emp_nm < '라')]]>
+				</if>
+				<if test='standard == "라"'>
+					<![CDATA[ AND (emp_nm >= '라' AND emp_nm < '마')]]>
+				</if>
+				<if test='standard == "마"'>
+					<![CDATA[ AND (emp_nm >= '마' AND emp_nm < '바')]]>
+				</if>
+				<if test='standard == "바"'>
+					<![CDATA[ AND (emp_nm >= '바' AND emp_nm < '사')]]>
+				</if>
+				<if test='standard == "사"'>
+					<![CDATA[ AND (emp_nm >= '사' AND emp_nm < '아')]]>
+				</if>
+				<if test='standard == "아"'>
+					<![CDATA[ AND (emp_nm >= '아' AND emp_nm < '자')]]>
+				</if>
+				<if test='standard == "자"'>
+					<![CDATA[ AND (emp_nm >= '자' AND emp_nm < '차')]]>
+				</if>
+				<if test='standard == "차"'>
+					<![CDATA[ AND (emp_nm >= '차' AND emp_nm < '카')]]>
+				</if>
+				<if test='standard == "카"'>
+					<![CDATA[ AND (emp_nm >= '카' AND emp_nm < '타')]]>
+				</if>
+				<if test='standard == "타"'>
+					<![CDATA[ AND (emp_nm >= '타' AND emp_nm < '파')]]>
+				</if>
+				<if test='standard == "파"'>
+					<![CDATA[ AND (emp_nm >= '파' AND emp_nm < '하')]]>
+				</if>
+				<if test='standard == "하"'>
+					<![CDATA[ AND (emp_nm >= '하' AND emp_nm < '힣')]]>
+				</if>
+				<if test='standard == "A"'>
+					AND regexp_like(emp_nm, '[A-z]')]]
+				</if>
+				<if test='standard == "10"'>
+					AND regexp_like(emp_nm, '^[0-9]')]]
+				</if>
+				<if test='standard == "all"'></if>
+                ORDER BY emp_nm ASC) a ) b
+	WHERE rn between (#{pageIndex}-1) * #{recordCountPerPage} + 1 and #{pageIndex} * #{recordCountPerPage}
+	
+</select>
+
+<select id="addrCount" parameterType="kr.or.ddit.address.vo.AddrEmpVO" resultType="int">
+	SELECT COUNT(*) FROM emp
+  	WHERE EMP_QUIT_YN = 'N'
+</select>
+
+<select id="selectCount" parameterType="kr.or.ddit.address.vo.AddrEmpVO" resultType="int">
+	SELECT COUNT (*) 
+		FROM (SELECT b.* 
+			FROM(SELECT rownum as rn, a.* 
+			    FROM ( select * from emp WHERE EMP_QUIT_YN = 'N' 
+			   <if test='standard == "가"'>
+					<![CDATA[ AND (emp_nm >= '가' AND emp_nm < '나')]]>
+				</if>
+				<if test='standard == "나"'>
+					<![CDATA[ AND (emp_nm >= '나' AND emp_nm < '다')]]>
+				</if>
+				<if test='standard == "다"'>
+					<![CDATA[ AND (emp_nm >= '다' AND emp_nm < '라')]]>
+				</if>
+				<if test='standard == "라"'>
+					<![CDATA[ AND (emp_nm >= '라' AND emp_nm < '마')]]>
+				</if>
+				<if test='standard == "마"'>
+					<![CDATA[ AND (emp_nm >= '마' AND emp_nm < '바')]]>
+				</if>
+				<if test='standard == "바"'>
+					<![CDATA[ AND (emp_nm >= '바' AND emp_nm < '사')]]>
+				</if>
+				<if test='standard == "사"'>
+					<![CDATA[ AND (emp_nm >= '사' AND emp_nm < '아')]]>
+				</if>
+				<if test='standard == "아"'>
+					<![CDATA[ AND (emp_nm >= '아' AND emp_nm < '자')]]>
+				</if>
+				<if test='standard == "자"'>
+					<![CDATA[ AND (emp_nm >= '자' AND emp_nm < '차')]]>
+				</if>
+				<if test='standard == "차"'>
+					<![CDATA[ AND (emp_nm >= '차' AND emp_nm < '카')]]>
+				</if>
+				<if test='standard == "카"'>
+					<![CDATA[ AND (emp_nm >= '카' AND emp_nm < '타')]]>
+				</if>
+				<if test='standard == "타"'>
+					<![CDATA[ AND (emp_nm >= '타' AND emp_nm < '파')]]>
+				</if>
+				<if test='standard == "파"'>
+					<![CDATA[ AND (emp_nm >= '파' AND emp_nm < '하')]]>
+				</if>
+				<if test='standard == "하"'>
+					<![CDATA[ AND (emp_nm >= '하' AND emp_nm < '힣')]]>
+				</if>
+			    ORDER BY emp_nm ASC) a ) b 
+			    WHERE rn between (#{pageIndex}-1) * #{recordCountPerPage} + 1 and #{pageIndex} * #{recordCountPerPage})
+</select>
+<select id="excelSelect" parameterType="kr.or.ddit.address.vo.AddrEmpVO" resultType="kr.or.ddit.address.vo.AddrEmpVO">
+	select empT.emp_id, empT.emp_nm, empT.ADDR1, empT.ADDR2, empT.ZIPCODE, empT.EMP_HP,
+            deptT.dept_name as dept_id,
+            jobT.jobtitle_nm as jobtitle_id
+    from (select *
+          from dept) deptT,
+          (select *
+          from job_title) jobT,
+           (select *
+          from emp) empT
+    where empT.dept_id = deptT.dept_id and empT.EMP_QUIT_YN='N' 
+      and empT.jobtitle_id = jobT.jobtitle_id
+</select>
+
+
+</mapper>

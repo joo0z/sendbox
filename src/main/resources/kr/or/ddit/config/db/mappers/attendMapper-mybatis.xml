@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.attend.dao.AttendMapperDao">
+	
+	<select id="getAttend" parameterType="kr.or.ddit.attend.vo.AttendVO" resultType="kr.or.ddit.attend.vo.AttendVO">
+		SELECT
+		    attend_seq,
+		    emp_id,
+		    attend_dt,
+		    work_time,
+		    home_time,
+		    remark,
+		    login_ip
+		FROM
+   			attend
+   			
+   			<where>
+   				<if test="empId != null">
+					<if test="attendDt != null">
+						and emp_id = #{empId} and attend_dt = #{attendDt}
+					</if>   				
+   				</if>
+   			</where>
+	</select>
+	
+	
+	<insert id="insertAttend" parameterType="kr.or.ddit.attend.vo.AttendVO">
+		INSERT INTO ATTEND(attend_seq, emp_id, attend_dt, work_time, home_time,login_ip)
+		VALUES (attend_seq.nextval, #{empId}, #{attendDt}, #{workTime}, #{homeTime},#{loginIp})
+	</insert>
+	
+	<update id="updateAttend" parameterType="kr.or.ddit.attend.vo.AttendVO">
+		UPDATE ATTEND SET HOME_TIME = #{homeTime} WHERE emp_id = #{empId} and attend_dt = #{attendDt}
+	</update>
+	
+	<select id="getAttendList" parameterType="kr.or.ddit.attend.vo.AttendVO" resultType="kr.or.ddit.attend.vo.AttendVO">
+		  SELECT
+			    attend_seq,
+			    emp_id,
+			    TO_CHAR(attend_dt,'YYYY-MM-DD') as attend_dt,
+			    work_time,
+			    home_time,
+			    remark,
+			    login_ip
+			FROM
+			    attend
+			    where to_char(attend_dt, 'yyyy/mm') like '%' || #{attendDt} || '%' 
+			      and emp_id = #{empId} 
+	</select>
+	
+	<select id="selectAttendTotCnt" parameterType="kr.or.ddit.attend.vo.AttendVO" resultType="kr.or.ddit.attend.vo.AttendVO">
+		SELECT count(*) FROM attend
+	
+	</select>
+	
+	<select id="selectAttend" parameterType="kr.or.ddit.attend.vo.AttendVO" resultType="kr.or.ddit.attend.vo.AttendVO">
+		SELECT
+	    attend_seq,
+	    emp_id,
+	    TO_CHAR(attend_dt,'YYYY-MM-DD') as attend_dt,
+	    work_time,
+	    home_time,
+	    remark,
+	    login_ip
+	FROM
+	    attend
+	    where to_char(attend_dt, 'yyyy/mm') like '%' || #{attendDt} || '%' 
+	      and emp_id = #{empId} 
+	</select>
+	
+
+ 
+   
+	<select id="myMonthPlusAttend" parameterType="kr.or.ddit.attend.vo.AttendVO" resultType="double">
+	<![CDATA[
+	select
+		NVL(
+		ROUND(
+		SUM(
+		CASE WHEN(to_date(HOME_TIME,'HH24:MI:SS')-to_date('180000','HH24:MI:SS'))>0
+		THEN (to_date(HOME_TIME,'HH24:MI:SS')-to_date('180000','HH24:MI:SS'))
+		WHEN(to_date(HOME_TIME,'HH24:MI:SS')-to_date('180000','HH24:MI:SS'))<=0
+		THEN 0 END)*24,2),0) AS TIME
+	FROM ATTEND
+	WHERE EMP_ID=#{empId} AND to_char(ATTEND_DT,'YYYY-MM-DD') like #{attendDt}||'%'
+	]]>
+	</select>
+	
+	<select id="myWeekPlusAttend" parameterType="kr.or.ddit.attend.vo.AttendVO" resultType="double">
+	<![CDATA[
+	select
+		NVL(
+		ROUND(
+		SUM(
+		CASE WHEN(to_date(HOME_TIME,'HH24:MI:SS')-to_date('180000','HH24:MI:SS'))>0
+		THEN (to_date(HOME_TIME,'HH24:MI:SS')-to_date('180000','HH24:MI:SS'))
+		WHEN(to_date(HOME_TIME,'HH24:MI:SS')-to_date('180000','HH24:MI:SS'))<=0
+		THEN 0 END)*24,2),0) AS TIME
+	FROM ATTEND
+	WHERE EMP_ID=#{empId} AND
+	    (to_char(ATTEND_DT,'yyyy-mm-dd') = to_char( sysdate-( (select to_char(sysdate,'D') from dual) -2 ), 'yyyy-mm-dd')
+	    OR to_char(ATTEND_DT,'yyyy-mm-dd') = to_char( sysdate-( (select to_char(sysdate,'D') from dual) -2 )+1, 'yyyy-mm-dd')
+	    OR to_char(ATTEND_DT,'yyyy-mm-dd') = to_char( sysdate-( (select to_char(sysdate,'D') from dual) -2 )+2, 'yyyy-mm-dd')
+	    OR to_char(ATTEND_DT,'yyyy-mm-dd') = to_char( sysdate-( (select to_char(sysdate,'D') from dual) -2 )+3, 'yyyy-mm-dd')
+	    OR to_char(ATTEND_DT,'yyyy-mm-dd') = to_char( sysdate-( (select to_char(sysdate,'D') from dual) -2 )+4, 'yyyy-mm-dd')
+	 )
+	]]>
+	</select>
+	
+	<select id="myMonthAttend" resultType="double" parameterType="kr.or.ddit.attend.vo.AttendVO">
+	SELECT
+		NVL(
+		ROUND(
+		SUM(TO_DATE(HOME_TIME,'HH24:MI:SS')-TO_DATE(WORK_TIME,'HH24:MI:SS'))*24,2),0)
+		FROM ATTEND
+	WHERE EMP_ID = #{empId} AND to_char(ATTEND_DT,'YYYY-MM-DD') like #{attendDt}||'%'
+	</select>
+	
+	<select id="myWeekAttend" parameterType="kr.or.ddit.attend.vo.AttendVO" resultType="double">
+	SELECT
+		NVL(
+		ROUND(
+		SUM(TO_DATE(HOME_TIME,'HH24:MI:SS')-TO_DATE(WORK_TIME,'HH24:MI:SS'))*24,2),0)
+		FROM ATTEND
+	WHERE EMP_ID=#{empId} AND
+	    (to_char(ATTEND_DT,'yyyy-mm-dd') = to_char( sysdate-( (select to_char(sysdate,'D') from dual) -2 ), 'yyyy-mm-dd')
+	    OR to_char(ATTEND_DT,'yyyy-mm-dd') = to_char( sysdate-( (select to_char(sysdate,'D') from dual) -2 )+1, 'yyyy-mm-dd')
+	    OR to_char(ATTEND_DT,'yyyy-mm-dd') = to_char( sysdate-( (select to_char(sysdate,'D') from dual) -2 )+2, 'yyyy-mm-dd')
+	    OR to_char(ATTEND_DT,'yyyy-mm-dd') = to_char( sysdate-( (select to_char(sysdate,'D') from dual) -2 )+3, 'yyyy-mm-dd')
+	    OR to_char(ATTEND_DT,'yyyy-mm-dd') = to_char( sysdate-( (select to_char(sysdate,'D') from dual) -2 )+4, 'yyyy-mm-dd')
+	 )
+	</select>
+	
+	<select id="monday" parameterType="java.lang.String" resultType="java.lang.String">
+		SELECT NVL(MAX(ROUND((TO_DATE(HOME_TIME,'HH24:MI:SS') - TO_DATE(WORK_TIME,'HH24:MI:SS'))*24,2)),'0') as workTime
+	      FROM ATTEND
+	      WHERE EMP_ID = #{empId}
+	      and
+	      (to_char(ATTEND_DT,'yyyy-mm-dd') = to_char( sysdate-( (select to_char(sysdate,'D') from dual) -2 ), 'yyyy-mm-dd'))
+	</select>
+	
+	<select id="tuesday" parameterType="java.lang.String" resultType="java.lang.String">
+		SELECT NVL(MAX(ROUND((TO_DATE(HOME_TIME,'HH24:MI:SS') - TO_DATE(WORK_TIME,'HH24:MI:SS'))*24,2)),'0') as workTime
+	      FROM ATTEND
+	      WHERE EMP_ID = #{empId}
+	      and
+	      (to_char(ATTEND_DT,'yyyy-mm-dd') = to_char( sysdate-( (select to_char(sysdate,'D') from dual) -2 )+1, 'yyyy-mm-dd'))
+	</select>
+	
+	<select id="wednesday" parameterType="java.lang.String" resultType="java.lang.String">
+		SELECT NVL(MAX(ROUND((TO_DATE(HOME_TIME,'HH24:MI:SS') - TO_DATE(WORK_TIME,'HH24:MI:SS'))*24,2)),'0') as workTime
+	      FROM ATTEND
+	      WHERE EMP_ID = #{empId}
+	      and
+	      (to_char(ATTEND_DT,'yyyy-mm-dd') = to_char( sysdate-( (select to_char(sysdate,'D') from dual) -2 )+2, 'yyyy-mm-dd'))
+	</select>
+	
+	<select id="thursday" parameterType="java.lang.String" resultType="java.lang.String">
+		SELECT NVL(MAX(ROUND((TO_DATE(HOME_TIME,'HH24:MI:SS') - TO_DATE(WORK_TIME,'HH24:MI:SS'))*24,2)),'0') as workTime
+	      FROM ATTEND
+	      WHERE EMP_ID = #{empId}
+	      and
+	      (to_char(ATTEND_DT,'yyyy-mm-dd') = to_char( sysdate-( (select to_char(sysdate,'D') from dual) -2 )+3, 'yyyy-mm-dd'))
+	</select>
+	
+	<select id="friday" parameterType="java.lang.String" resultType="java.lang.String">
+		SELECT NVL(MAX(ROUND((TO_DATE(HOME_TIME,'HH24:MI:SS') - TO_DATE(WORK_TIME,'HH24:MI:SS'))*24,2)),'0') as workTime
+	      FROM ATTEND
+	      WHERE EMP_ID = #{empId}
+	      and
+	      (to_char(ATTEND_DT,'yyyy-mm-dd') = to_char( sysdate-( (select to_char(sysdate,'D') from dual) -2 )+4, 'yyyy-mm-dd'))
+	</select>
+</mapper>

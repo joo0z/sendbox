@@ -1,0 +1,24 @@
+#jojikdo {height:100%; margin: 0; padding: 0; }
+
+#jojikdo {
+	font-size: 16px;
+	font-size: 68.75%;
+} /* Reset Base Font Size */
+
+#jojikdo {
+	font-family: Verdana, helvetica, arial, sans-serif;
+	font-size: 68.75%;
+	background: #fff;
+	color: #333;
+}
+
+#jojikdo h1, #jojikdo h2 { font-family: 'trebuchet ms', verdana, arial; padding: 10px; margin: 0 }
+#jojikdo h1 { font-size: large }
+
+#jojikdo #banner { padding: 15px; background-color: #06b; color: white; font-size: large; border-bottom: 1px solid #ccc;
+    background: url(bg.gif) repeat-x; text-align: center }
+#jojikdo #banner a { color: white; }
+
+#jojikdo #main { padding: 1em; }
+
+#jojikdo a img { border: none; }

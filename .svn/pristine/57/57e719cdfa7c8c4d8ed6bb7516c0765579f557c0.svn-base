@@ -1,0 +1,482 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+    pageEncoding="UTF-8"%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=0.5,maximum=0.5, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>sendbox</title>
+    
+    
+    
+	<!-- commonLib  -->
+    <!-- Custom fonts for this template-->
+    <link href="${pageContext.request.contextPath}/admin2form/vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
+    <link
+        href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i"
+        rel="stylesheet">
+
+    <!-- Custom styles for this template-->
+    <link href="${pageContext.request.contextPath}/admin2form/css/sb-admin-2.min.css" rel="stylesheet">
+    
+    <!-- Bootstrap core JavaScript-->
+    <script src="${pageContext.request.contextPath}/admin2form/vendor/jquery/jquery.min.js"></script>
+    <script src="${pageContext.request.contextPath}/admin2form/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Core plugin JavaScript-->
+<%--     <script src="${pageContext.request.contextPath}/admin2/form/vendor/jquery-easing/jquery.easing.min.js"></script> --%>
+
+    <!-- Custom scripts for all pages-->
+    <script src="${pageContext.request.contextPath}/admin2form/js/sb-admin-2.min.js"></script>
+	
+	
+	
+	
+	<script type="text/javascript">
+		$(function(){
+			
+			
+			document.body.style.zoom = "65%";
+			
+			eddedEmpDataArr = [];
+			eddedEmpNameArr = [];
+			eddedEmpChkTF = [];
+			empIdArr = [];
+			
+			
+			function addedEmpFunc(){
+				
+				var dbEmpInfoList = "${dbEmpNameList}";
+				var empListA = dbEmpInfoList.split("[");
+				var empListB = empListA[1].split("]");
+				var empInfoArr = empListB[0].split(", ");
+				
+				console.log("위쪽 empInfoArr = ", empInfoArr)
+				
+				eddedEmpChkTF = [];
+				empIdArr = [];
+				if(empInfoArr != null && empInfoArr.length > 0){
+					
+					// id와 이름 문자열 자르기
+					// id arr길이만큼 false를 입력
+					for(var i=0; i<empInfoArr.length; i++){
+						var temp = empInfoArr[i].split(":+:");
+						empIdArr.push(temp[0]);
+						eddedEmpChkTF.push(false);
+					}
+					
+					for(var i=0; i<eddedEmpDataArr.length; i++){
+						for(var j=0; j<empIdArr.length; j++){
+							if(eddedEmpDataArr[i] == empIdArr[j]){
+								eddedEmpChkTF[j] = true;
+								break;
+							}
+						}
+					}
+					
+				}
+			}
+			
+			
+			
+			$("#chatTableBody").on("click", ".checkTR",  function(){
+				// 사원 id
+				var empId = $(this).data("emptr");
+				var empNm = $(this).data("empnm");
+				
+				// 사원 선택시
+				if($(this).find(".inputCheckEmp").is(":checked") == false){
+					$(this).find(".inputCheckEmp").prop("checked", true);
+					$(this).find("td").css("backgroundColor", "Lightyellow");
+					$(this).find(".checkedImgClass").attr("src", "/images/checkImg/checked_re.png");
+					
+					
+					var eddedEmpTag = "";
+					eddedEmpTag += "<div class='eddedEmpDiv' id='"+empId+"' data-empid='"+empId+"' data-empnm='"+empNm+"' style='text-align: center;'>";
+					eddedEmpTag += "	<span type='text' class='eddedEmpInfo' style='font-size: 25px;'>"+empNm+"</span>";
+					eddedEmpTag += "</div>";
+					$("#addedEmpListDiv").append(eddedEmpTag);
+					
+					// 사원 id 배열에 해당 id를 추가
+					eddedEmpDataArr.push(empId);
+					eddedEmpNameArr.push(empNm);
+				}
+				// 사원 선택 취소시
+				else if($(this).find(".inputCheckEmp").is(":checked") == true){
+					$(this).find(".inputCheckEmp").prop("checked", false);
+					$(this).find("td").css("backgroundColor", "white");
+					$(this).find(".checkedImgClass").attr("src", "/images/checkImg/unchecked_re.png");
+					
+					
+					var clickDelEmpId = $(this).data("emptr");
+					$("#addedEmpListDiv").find("#"+clickDelEmpId).remove();
+					
+					// 사원 id 배열에서 같은 id를 가지는 i번째 요소를 삭제
+					for(var i=0; i<eddedEmpDataArr.length; i++){
+						if(eddedEmpDataArr[i] == clickDelEmpId){
+							console.log(i)
+							eddedEmpDataArr.splice(i, 1);
+							eddedEmpNameArr.splice(i, 1);
+							break;
+						}
+					}
+				}
+				addedEmpFunc();
+				console.log("현재 선택한 사원 배열 : ", eddedEmpDataArr);
+				console.log("전체 사원의 체크결과 : ", eddedEmpChkTF);
+			});
+			
+			
+			
+			// 상단에 추가된 이름 span을 클릭시 삭제처리
+			$("#addedEmpListDiv").on("click", ".eddedEmpDiv", function(){
+				
+				// 선택한 사원의 id
+				var clickEmpId = $(this).attr("id");
+				console.log("clickEmpId = ", clickEmpId);
+				
+				// 선택한 사원의 id와 일치하는 eddedEmpChkTF배열의 i번째 값을 false로 변경 
+				console.log("empIdArr.length = ", empIdArr.length);
+				
+				for(var i=0; i<empIdArr.length; i++){
+					if(clickEmpId == empIdArr[i]){
+						eddedEmpChkTF[i] = false;
+						break;
+					}
+				}
+				console.log("eddedEmpChkTF = ", eddedEmpChkTF);
+				
+				// 선택한 사원의 id를 배열에서 삭제
+				for(var i=0; i<eddedEmpDataArr.length; i++){
+					if(eddedEmpDataArr[i] == clickEmpId){
+						eddedEmpDataArr.splice(i, 1);
+						eddedEmpNameArr.splice(i, 1);
+					}
+				}
+				console.log("eddedEmpDataArr = ", eddedEmpDataArr);
+				
+				var id = "#chatTableBody #"+clickEmpId;
+				console.log(id)
+				$(id).find(".inputCheckEmp").prop("checked", false);
+				$(id).find("td").css("backgroundColor", "white");
+				$(id).find(".checkedImgClass").attr("src", "/images/checkImg/unchecked_re.png");
+				$(this).remove();
+			});
+			
+			
+			
+			
+			// 채팅방에 초대할 사원의 이름 검색
+			$("#receiver").keydown(function(){
+				
+				addedEmpFunc();
+				
+				
+				var dbEmpInfoList = "${dbEmpNameList}";
+				var empListA = dbEmpInfoList.split("[");
+				var empListB = empListA[1].split("]");
+				var empInfoArr = empListB[0].split(", ")
+				
+				console.log("dbEmpInfoList = ", dbEmpInfoList);
+				console.log("empInfoArr = ", empInfoArr);
+				
+				var empInfoData = {};
+				if(empInfoArr != null && empInfoArr.length > 0){
+					var empIdArr = [];
+					var empNmArr = [];
+					for(var i=0; i<empInfoArr.length; i++){
+						var temp = empInfoArr[i].split(":+:");
+						empIdArr.push(temp[0])
+						empNmArr.push(temp[1])
+					}
+					empInfoData = { empIdList : empIdArr, 
+								    empNmList : empNmArr }
+				}
+				var keyword = $(this).val();
+				
+				console.log("empInfoData = ", empInfoData);
+				console.log("keyword = ", keyword);
+				
+				// searching...
+				var searchEmpInfo = [];
+				for(var i=0; i<empInfoData.empNmList.length; i++){
+					if(empInfoData.empNmList[i].search(keyword) != -1){
+						searchEmpInfo.push(empInfoData.empIdList[i]);
+					}
+				}
+				
+				console.log("keyword searchEmpInfo = ", searchEmpInfo);
+				
+				// search result view
+				$("#chatTableBody").html("");
+				var chatInfoTagList = "";
+				// 키워드와 일치하는 사원의 수
+				for(var i=0; i<searchEmpInfo.length; i++){
+					// 주소록에 있는 사원의 수
+					for(var j=0; j<empInfoData.empIdList.length; j++){
+						// 주소록에서 키워드와 일치하는 사원의 정보를 다시 뿌려준다.
+						if(empInfoData.empIdList[j] == searchEmpInfo[i]){
+							
+							// 해당 사원이 이미 체크가 되었는지 아닌지를 확인후 check값을 변경한다.
+							if(eddedEmpChkTF[j] == true){
+								chatInfoTagList += "<tr id='"+empInfoData.empIdList[j]+"' data-emptr='"+empInfoData.empIdList[j]+"' data-empnm='"+empInfoData.empNmList[j]+"' class='checkTR'>";
+								chatInfoTagList += "	<td style='background: Lightyellow;'>";
+								chatInfoTagList += "		<img class='men' src='${pageContext.request.contextPath}/profileImgView?empId="+empInfoData.empIdList[j]+"'";
+								chatInfoTagList += "			 style='width:50px; height: 60px; border-radius: 60%; overflow: hidden; margin:10px;'>";
+								chatInfoTagList += "		<span class='empNameInfo'>"+empInfoData.empNmList[j]+"</span>";
+								chatInfoTagList += "		<input type='checkbox' class='inputCheckEmp' checked='checked'/>";
+								chatInfoTagList += "		<img class='checkedImgClass' src='/images/checkImg/checked_re.png'/>";
+								chatInfoTagList += "	</td>";
+								chatInfoTagList += "</tr>";
+							}else if(eddedEmpChkTF[j] == false){
+								chatInfoTagList += "<tr id='"+empInfoData.empIdList[j]+"' data-emptr='"+empInfoData.empIdList[j]+"' data-empnm='"+empInfoData.empNmList[j]+"' class='checkTR'>";
+								chatInfoTagList += "	<td style='background: white;'>";
+								chatInfoTagList += "		<img class='men' src='${pageContext.request.contextPath}/profileImgView?empId="+empInfoData.empIdList[j]+"'";
+								chatInfoTagList += "			 style='width:50px; height: 60px; border-radius: 60%; overflow: hidden; margin:10px;'>";
+								chatInfoTagList += "		<span class='empNameInfo'>"+empInfoData.empNmList[j]+"</span>";
+								chatInfoTagList += "		<input type='checkbox' class='inputCheckEmp' />";
+								chatInfoTagList += "		<img class='checkedImgClass' src='/images/checkImg/unchecked_re.png'/>";
+								chatInfoTagList += "	</td>";
+								chatInfoTagList += "</tr>";
+							}
+							
+						}
+					}
+				}
+				$("#chatTableBody").html(chatInfoTagList);
+			});
+			
+			
+			
+			// 사원 초대 버튼 클릭
+			$("#inviteEmpBtn").on("click", function(){
+
+				if(eddedEmpDataArr.length > 0){
+					$.ajax({
+						url		: "/chat/inviteChatEmp",
+						contentType :   "application/x-www-form-urlencoded; charset=UTF-8",
+						data	: { empIdArr 	: eddedEmpDataArr, // 사원이 주소록에서 선택한 사원id 배열
+									empNmArr	: eddedEmpNameArr, // 사원이 주소록에서 선택한 사원이름 배열
+									chatRoomId	: "${param.chatRoomId}" },
+						dataType: "json",
+						method	: "post",
+						success	: function(data){
+							empInfo = { empIdList : eddedEmpDataArr,    // 사원이 주소록에서 선택한 사원id 배열
+										empNmList : eddedEmpNameArr}    // 사원이 주소록에서 선택한 사원이름 배열
+							opener.chatInfoListReload(empInfo);
+							self.close();
+						},
+						error	: function(error){
+							alert("사원 초대 실패, error code : "+error.status);
+						}
+					});
+				}else{
+					alert("초대하려는 사원을 선택해주세요.");
+				}
+			});
+		});
+	</script>
+	
+	
+	
+	
+	<style type="text/css">
+		.inputCheckEmp {
+		    display:none;
+		}
+		.inputCheckEmp + label span {
+		    display: inline-block;
+		    width: 24px;
+		    height: 24px;
+		    margin: -2px 10px 0 0;
+		    vertical-align: middle;
+		    background: url(checkbox.svg) left top no-repeat;
+		    cursor: pointer;
+		    background-size: cover;
+		}
+		tr, td{
+			border-collapse: collapse;
+		}
+		.checkedImgClass{
+			float: right;
+			margin-right: 50px;
+			margin-top: 15px;
+			width: 50px;
+			height: 50px;
+		}
+		
+		
+		
+		
+		
+		
+		
+		@font-face {
+		    font-family: 'InfinitySans-RegularA1';
+		    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_20-04@2.1/InfinitySans-RegularA1.woff') format('woff');
+		    font-weight: normal;
+		    font-style: normal;
+		}
+		#page-top, #inviteEmpBtn{
+			font-family: 'InfinitySans-RegularA1';
+		} 
+		
+		
+		#inviteEmpBtn{
+			background: #303A71;
+			color: white;
+			font-family: inherit;
+		}
+		.empNameInfo{
+			font-size: 20px;
+		}
+		
+		.eddedEmpDiv{
+			float: left;
+			margin-right: 10px;
+			border-radius: 50px;
+			border: 1px solid black;
+			height: 50px;
+			width: 120px;
+			vertical-align: bottom;
+			padding-top: 8px;
+			padding-bottom: 50px;
+			margin-bottom: 10px;
+		}
+		.eddedEmpDiv:hover{
+			cursor: pointer;
+		}
+	</style>
+</head>
+
+<body id="page-top">
+
+    <!-- Page Wrapper -->
+    <div id="wrapper">
+
+        <!-- Content Wrapper -->
+        <div id="content-wrapper" class="d-flex flex-column">
+
+            <!-- Main Content -->
+            <div id="content">
+
+
+                <!-- Begin Page Content -->
+                <div class="container-fluid">
+                
+                	<br><br>
+	
+                    <!-- Page Heading -->
+                    <h2 class="h3 mb-2 text-gray-800"><i class="fas fa-address-book fa-fw" style="margin-left: 10px;"></i>&nbsp&nbsp 초대하기
+                    </h2>
+                    
+                    <!-- DataTales Example -->
+                    <div class="card shadow mb-4">
+                        <div class="card-header py-3">
+                        	<div style="margin-left: 10px;">
+                        		<input class="form-control" id="receiver" name="receiver"
+		                        	   maxlength="30" minlength="1" 
+		                        	   style="margin-left: 10px; width: 70%; float: left; height: 50px;"
+		                        	   placeholder="사원 이름 검색">
+<!-- 								&nbsp;&nbsp;&nbsp;&nbsp; -->
+								<!-- 채팅방 초대 버튼 -->
+								<input type="button" id="inviteEmpBtn" class="btn" value="초대하기" 
+									   style="display:inline; float: right; font-size: 20px;">
+                            </div>
+                            <br><br><br>
+                            <div id="addedEmpListDiv"></div>
+                        </div>
+                        
+                        
+                        <div class="card-body">
+                            <div class="table-responsive" style="overflow: hidden;">
+                                <table class="table table-bordered" width="100%" cellspacing="0">
+                                    
+                                    <tbody id="chatTableBody">
+                                    
+                                  		<c:choose>
+                                  		
+                                  			<c:when test="${empList.size() > 0}">
+                                  			
+	                                   			<c:forEach var="i" begin="0" end="${empList.size() - 1}" step="1">
+	                                   				<c:if test="${empList.get(i).empId != EMP.empId}">
+	                                   					<tr id="${empList.get(i).empId }" data-emptr="${empList.get(i).empId }" data-empnm="${empList.get(i).empNm }" class="checkTR">
+															<td>
+																<img class="men" src="${pageContext.request.contextPath}/profileImgView?empId=${empList.get(i).empId}" 
+																style="width:50px; height: 60px; border-radius: 60%; overflow: hidden; margin:10px;">
+																<span class="empNameInfo">${empList.get(i).empNm }</span>
+																<input type="checkbox" class="inputCheckEmp"/>
+																<img class="checkedImgClass" src="/images/checkImg/unchecked_re.png"/>
+															</td>
+														</tr>
+	                                   				</c:if>
+												
+												</c:forEach>
+                                  			</c:when>
+                                  			
+                                  			<c:otherwise>
+                                  				<tr>
+													<td colspan="4">데이터 없음</td>
+												</tr>
+                                  			</c:otherwise>
+                                  		
+                                  		</c:choose>
+		                                   	
+                                   	
+									</tbody>
+                                </table>
+                            </div>
+                            
+						</div>
+                    </div>
+                
+                
+                </div>
+                <!-- /.container-fluid -->
+
+            </div>
+            
+            
+            
+            <!-- End of Main Content -->
+
+        </div>
+        <!-- End of Content Wrapper -->
+
+    </div>
+    <!-- End of Page Wrapper -->
+    
+    
+    <!-- Scroll to Top Button-->
+    <a class="scroll-to-top rounded" href="#page-top">
+        <i class="fas fa-angle-up"></i>
+    </a>
+
+    <!-- Core plugin JavaScript-->
+    <script src="/admin2form/vendor/jquery-easing/jquery.easing.min.js"></script>
+
+    <!-- Custom scripts for all pages-->
+    <script src="/admin2form/js/sb-admin-2.min.js"></script>
+
+    <!-- Page level plugins -->
+    <script src="/admin2form/vendor/datatables/jquery.dataTables.min.js"></script>
+    <script src="/admin2form/vendor/datatables/dataTables.bootstrap4.min.js"></script>
+
+    <!-- Page level custom scripts -->
+    <script src="/admin2form/js/demo/datatables-demo.js"></script>
+    
+
+
+
+</body>
+
+
+</html>

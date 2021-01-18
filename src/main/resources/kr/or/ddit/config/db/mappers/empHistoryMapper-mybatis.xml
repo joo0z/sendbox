@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.emp.dao.EmpHistoryMapper">
+
+	<select id="getEmpHistory" parameterType="kr.or.ddit.emp.vo.EmpHistoryVO" resultType="kr.or.ddit.emp.vo.EmpHistoryVO">
+		SELECT
+		    emp_his_seq,
+		    emp_id,
+		    dept_id,
+		    jobtitle_id,
+		    start_dt,
+		    end_dt,
+		    upd_dt
+		FROM
+		    emp_history
+</select>
+
+<insert id="insertEmpHistory" parameterType="kr.or.ddit.emp.vo.EmpHistoryVO">
+	    INSERT INTO emp_history (
+		    emp_his_seq,
+		    emp_id,
+		    dept_id,
+		    jobtitle_id,
+		    start_dt
+			) VALUES (
+			EMP_HIS_SEQ.nextval,
+			#{empId},
+			#{deptId},
+			#{jobtitleId},
+			sysdate
+			)
+</insert>
+
+<update id="updateEmpHistory" parameterType="kr.or.ddit.emp.vo.EmpHistoryVO">
+	  	update emp_history 
+		set dept_id = #{deptId} 
+			,jobtitle_id = #{jobtitleId} 
+            ,upd_dt = sysdate
+		where emp_id = #{empId}
+</update>
+
+
+
+</mapper>

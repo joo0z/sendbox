@@ -1,0 +1,9 @@
+#\uac1c\uc778 db \uc5f0\uacb0\uc815\ubcf4
+jdbc.driver=net.sf.log4jdbc.sql.jdbcapi.DriverSpy
+jdbc.url=jdbc:oracle:thin:@192.168.44.36:1521/xe
+jdbc.username=sendbox
+jdbc.password=java
+#jdbc.driver = oracle.jdbc.driver.OracleDriver
+#jdbc.url = jdbc:oracle:thin:@localhost:1521/xe
+#jdbc.username=dkdk
+#jdbc.password=java

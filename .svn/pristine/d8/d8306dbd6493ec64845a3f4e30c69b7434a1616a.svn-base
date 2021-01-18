@@ -1,0 +1,262 @@
+package kr.or.ddit.report.vo;
+
+import java.util.List;
+
+import org.springframework.web.multipart.MultipartFile;
+
+import kr.or.ddit.comm.vo.BaseVO;
+
+public class ReportVO extends BaseVO{
+	
+	private String typeId;							//문서양식번호
+	private String typeNm;							//문서양식이름
+	private String reportDt;						//기안일자
+	private String empId;							//기안자아이디
+	private String empNm;							//기안자 이름
+	private String deptId;							//기안자 부서 아이디
+	private String deptName;						//기안자 부서 이름
+	private String jobtitleId;						//기안자 직급아이디
+	private String jobtitleNm;						//기안자 직급명
+	private String reportSt;						//기안상태 ( W: 대기, ing : 진행중, Y : 승인, N : 반려)
+	private String title;							//문서제목
+	private String content;							//문서 내용
+	private String approver;						//현 결재자 아이디
+	private String approverNm;						//현 결재자 이름
+	private String nextApprover;					//다음 결재자 아이디
+	private String apprKind;						//결재라인	이름
+	private String reportId;					    //기안번호				
+	private List<ApprovLineVO> approvLineList;		//결재라인
+	private String signInfo;						//기안자의 사인정보
+	private List<ReportSignVO> reportSignList;		//기안문서의 사인정보
+	private List<MultipartFile> fileList;			//기안문서의 첨부파일 받아오기
+	private List<ReportFileVO> reportFileList;		//기안문서의 첨부파일 저장하기
+	private List<ApprovalVO> approvalList;			//기안문서의 결재내역 리스트
+	private String startDt;							//시행일자
+	private String endDt;							//종료일자
+	private String reportOptCode;					//기안문서 옵션 정보 구분코드
+	private String reportOptCont;					//기안문서 옵션 정보 내용
+	private String vacatTypeName;					//휴가 종류 이름
+	private String uploadtoken;						//업로드용 구분 토큰(중복 업로드 방지)
+	private String readYn;							//읽음 구분 (기안자)
+	private String approvDt;						//결재일자
+	private String approvResult;					//결재결과
+	private String checkYn;							//확인 구분 (결재자)
+	private String subEmpId;						//대리결재자아이디
+	private String subEmpNm;						//대리결재자사원명
+	
+
+	public String getSubEmpNm() {
+		return subEmpNm;
+	}
+	public void setSubEmpNm(String subEmpNm) {
+		this.subEmpNm = subEmpNm;
+	}
+	public String getSubEmpId() {
+		return subEmpId;
+	}
+	public void setSubEmpId(String subEmpId) {
+		this.subEmpId = subEmpId;
+	}
+	public String getVacatTypeName() {
+		return vacatTypeName;
+	}
+	public void setVacatTypeName(String vacatTypeName) {
+		this.vacatTypeName = vacatTypeName;
+	}
+	public String getApproverNm() {
+		return approverNm;
+	}
+	public void setApproverNm(String approverNm) {
+		this.approverNm = approverNm;
+	}
+	public String getCheckYn() {
+		return checkYn;
+	}
+	public void setCheckYn(String checkYn) {
+		this.checkYn = checkYn;
+	}
+	public String getApprovDt() {
+		return approvDt;
+	}
+	public void setApprovDt(String approvDt) {
+		this.approvDt = approvDt;
+	}
+	public String getApprovResult() {
+		return approvResult;
+	}
+	public void setApprovResult(String approvResult) {
+		this.approvResult = approvResult;
+	}
+	public String getReadYn() {
+		return readYn;
+	}
+	public void setReadYn(String readYn) {
+		this.readYn = readYn;
+	}
+	public String getUploadtoken() {
+		return uploadtoken;
+	}
+	public void setUploadtoken(String uploadtoken) {
+		this.uploadtoken = uploadtoken;
+	}
+	public String getStartDt() {
+		return startDt;
+	}
+	public void setStartDt(String startDt) {
+		this.startDt = startDt;
+	}
+	public String getEndDt() {
+		return endDt;
+	}
+	public void setEndDt(String endDt) {
+		this.endDt = endDt;
+	}
+	public String getReportOptCode() {
+		return reportOptCode;
+	}
+	public void setReportOptCode(String reportOptCode) {
+		this.reportOptCode = reportOptCode;
+	}
+	public String getReportOptCont() {
+		return reportOptCont;
+	}
+	public void setReportOptCont(String reportOptCont) {
+		this.reportOptCont = reportOptCont;
+	}
+	public List<ApprovalVO> getApprovalList() {
+		return approvalList;
+	}
+	public void setApprovalList(List<ApprovalVO> approvalList) {
+		this.approvalList = approvalList;
+	}
+	public String getNextApprover() {
+		return nextApprover;
+	}
+	public void setNextApprover(String nextApprover) {
+		this.nextApprover = nextApprover;
+	}
+	
+	public String getTypeNm() {
+		return typeNm;
+	}
+	public void setTypeNm(String typeNm) {
+		this.typeNm = typeNm;
+	}
+	public String getEmpNm() {
+		return empNm;
+	}
+	public void setEmpNm(String empNm) {
+		this.empNm = empNm;
+	}
+	public String getDeptId() {
+		return deptId;
+	}
+	public void setDeptId(String deptId) {
+		this.deptId = deptId;
+	}
+	public String getDeptName() {
+		return deptName;
+	}
+	public void setDeptName(String deptName) {
+		this.deptName = deptName;
+	}
+	public String getJobtitleId() {
+		return jobtitleId;
+	}
+	public void setJobtitleId(String jobtitleId) {
+		this.jobtitleId = jobtitleId;
+	}
+	public String getJobtitleNm() {
+		return jobtitleNm;
+	}
+	public void setJobtitleNm(String jobtitleNm) {
+		this.jobtitleNm = jobtitleNm;
+	}
+	public List<ReportFileVO> getReportFileList() {
+		return reportFileList;
+	}
+	public void setReportFileList(List<ReportFileVO> reportFileList) {
+		this.reportFileList = reportFileList;
+	}
+	public List<MultipartFile> getFileList() {
+		return fileList;
+	}
+	public void setFileList(List<MultipartFile> fileList) {
+		this.fileList = fileList;
+	}
+	public String getSignInfo() {
+		return signInfo;
+	}
+	public void setSignInfo(String signInfo) {
+		this.signInfo = signInfo;
+	}
+	public List<ReportSignVO> getReportSignList() {
+		return reportSignList;
+	}
+	public void setReportSignList(List<ReportSignVO> reportSignList) {
+		this.reportSignList = reportSignList;
+	}
+	public void setTypeId(String typeId) {
+		this.typeId = typeId; 
+	}
+	public String getTypeId() {
+		return typeId; 
+	}
+	public void setReportDt(String reportDt) {
+		this.reportDt = reportDt; 
+	}
+	public String getReportDt() {
+		return reportDt; 
+	}
+	public void setEmpId(String empId) {
+		this.empId = empId; 
+	}
+	public String getEmpId() {
+		return empId; 
+	}
+	public void setReportSt(String reportSt) {
+		this.reportSt = reportSt; 
+	}
+	public String getReportSt() {
+		return reportSt; 
+	}
+	public void setTitle(String title) {
+		this.title = title; 
+	}
+	public String getTitle() {
+		return title; 
+	}
+	public void setContent(String content) {
+		this.content = content; 
+	}
+	public String getContent() {
+		return content; 
+	}
+	public void setApprover(String approver) {
+		this.approver = approver; 
+	}
+	public String getApprover() {
+		return approver; 
+	}
+	public void setApprKind(String apprKind) {
+		this.apprKind = apprKind; 
+	}
+	public String getApprKind() {
+		return apprKind; 
+	}
+	public void setReportId(String reportId) {
+		this.reportId = reportId; 
+	}
+	public String getReportId() {
+		return reportId; 
+	}
+	public List<ApprovLineVO> getApprovLineList() {
+		return approvLineList;
+	}
+	public void setApprovLineList(List<ApprovLineVO> approvLineList) {
+		this.approvLineList = approvLineList;
+	}
+	
+	
+
+}

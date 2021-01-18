@@ -1,0 +1,169 @@
+package kr.or.ddit.alarm.controller;
+
+import java.util.List;
+
+import javax.annotation.Resource;
+import javax.servlet.http.HttpSession;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.ResponseBody;
+
+import kr.or.ddit.alarm.service.AlarmService;
+import kr.or.ddit.alarm.vo.AlarmVO;
+import kr.or.ddit.emp.vo.EmpVO;
+
+
+@Controller
+public class AlamnEchoController {
+
+	
+	private static final Logger logger = LoggerFactory.getLogger(AlamnEchoController.class);
+	
+	
+	
+	@Resource(name = "alarmService")
+	private AlarmService alarmService;
+	
+	
+
+	// 알림 받기 controller - 채팅 버전
+	@RequestMapping("/alarm/chatRoomEmpList")
+	public String alamnReceive(Model model, String chatRoomId) {
+		
+		try {
+			List<String> empIdList =  alarmService.selectEmpIdList(chatRoomId);
+			model.addAttribute("empIdList", empIdList);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return "jsonView";
+	}
+	
+	
+	
+	
+	
+	
+	
+	
+	@RequestMapping("/alarm/selectAlarmEmp")
+	public String selectAlarmEmp(Model model, HttpSession session) {
+		
+		EmpVO empVO = (EmpVO) session.getAttribute("EMP");
+		
+		List<AlarmVO> alarmInfoList = alarmService.selectAlarmInfoList(empVO.getEmpId());
+		int myAlarmCnt = alarmService.selectMyAlarmYCnt(empVO.getEmpId());
+		
+		model.addAttribute("alarmCnt", myAlarmCnt);
+		model.addAttribute("alarmList", alarmInfoList);
+		return "jsonView";
+	}
+	
+	
+	
+	
+	
+	
+	@RequestMapping("/alarm/selectChatAlarmEmp")
+	public String selectChatAlarmEmp(Model model, HttpSession session) {
+		
+		EmpVO empVO = (EmpVO) session.getAttribute("EMP");
+		
+		List<AlarmVO> alarmInfoList = alarmService.selectChatAlarmInfoList(empVO.getEmpId());
+		int myAlarmCnt = alarmService.selectMyAlarmYCnt(empVO.getEmpId());
+		
+		model.addAttribute("alarmCnt", myAlarmCnt);
+		model.addAttribute("alarmList", alarmInfoList);
+		return "jsonView";
+	}
+	
+	
+	
+	
+	@RequestMapping("/alarm/alarmChatInsert")
+	public String alarmChatInsert(String chatRoomId, String alarmCont, HttpSession session, String alarmLinkCont) {
+		
+		logger.debug("chatRoomId : {}", chatRoomId);
+		
+		EmpVO empVO = (EmpVO) session.getAttribute("EMP");
+		
+		int insertAlarm  = alarmService.insertChatAlarm(chatRoomId, alarmCont, empVO.getEmpId(), alarmLinkCont);
+		
+		return "jsonView";
+	}
+	
+	
+	
+	
+	
+	
+	@RequestMapping("/alarm/alarmPostInsert")
+	public String alarmPostInsert(HttpSession session, String receiverId, String alarmCont, String alarmLinkCont) {
+		
+		logger.debug("alarmCont : {}", alarmCont);
+		
+		// 보내는 사람
+		EmpVO empVO = (EmpVO) session.getAttribute("EMP");
+		String sender = empVO.getEmpId();
+		try {
+			int insertAlarm  = alarmService.insertPostAlarm(sender, receiverId, alarmCont, alarmLinkCont);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return "jsonView";
+	}
+	
+	
+	
+	
+	
+	
+	
+	@RequestMapping("/alarm/alarmAllDel")
+	public String alarmAllDel(HttpSession session) {
+		
+		EmpVO empVO = (EmpVO) session.getAttribute("EMP");
+		try {
+			int deleteMyAlarm = alarmService.updateMyAlarmStatus(empVO);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return "jsonView";
+	}
+	
+	
+	
+	
+	
+	@RequestMapping("/alarm/alarmReadCheck")
+	public String alarmReadCheck(HttpSession session, int alarmSeq, Model model) {
+		
+		EmpVO empVO = (EmpVO) session.getAttribute("EMP");
+		
+		AlarmVO alarm = new AlarmVO();
+		alarm.setEmpId(empVO.getEmpId());
+		alarm.setAlarmSeq(alarmSeq);
+		
+		int myAlarmYCnt = alarmService.updateReadMyAlarm(alarm);
+		model.addAttribute("myAlarmYCnt", myAlarmYCnt);
+		
+		return "jsonView";
+	}
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+}

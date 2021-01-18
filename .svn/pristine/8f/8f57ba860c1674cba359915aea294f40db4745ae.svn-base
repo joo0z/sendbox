@@ -1,0 +1,452 @@
+ <%@ page language="java" contentType="text/html; charset=UTF-8"
+    pageEncoding="UTF-8"%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%> 
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
+<%@ taglib prefix="fn" uri="http://java.sun.com/jsp/jstl/functions" %>
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.min.js"></script>
+<title>Insert title here</title>
+<style>
+	a{
+		color: #858796;
+	}
+	.card{
+	float: left;
+	position:relative; 
+	
+	
+	}
+	#tab{
+		width: 100%;
+		
+	}
+	
+	#td1{
+		width : 450px;
+		padding: 10px;
+		margin: 5%;
+		vertical-align: top;
+	}
+	
+	#td2{
+		width : 450px;
+		padding: 10px;
+		margin: 5%;
+		vertical-align: top;
+	}
+	
+	#td3{
+		width : 400px;
+		padding: 10px;
+		margin: 5%;
+		vertical-align: top;
+	}
+
+	#weekcanvas{
+	margin-left: 5%;
+	}
+
+@font-face {
+    font-family: 'InfinitySans-RegularA1';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_20-04@2.1/InfinitySans-RegularA1.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+}
+body{
+  font-family: 'InfinitySans-RegularA1';
+}
+
+.card-tab{
+ padding-top : 0;
+ padding-bottom : 0;
+ padding-left : 0;
+ border-bottom: 1px solid #e3e6f0;
+}
+
+.tab{
+	width: 160px; 
+	text-align: center; 
+	padding: 15px; 
+	height: 56px; 
+	display:inline-block; 
+	border-radius: 10px 20px 0px 0px;
+	box-shadow: 2px 0px lightgray; 
+	cursor: pointer;
+	background: #f3f3f3;  
+	border-bottom: 1px solid lightgray; 
+	border-right : 0px solid #e3e6f0; 	
+}
+
+.active-tab{
+	background: white; 
+	border-bottom: 1px solid white; 
+	border-right : 1px solid #e3e6f0; 
+}
+
+.reportClass{
+	border-right : 1px solid lightgray;
+}
+
+.reportTr:hover{
+	color : #357BFE;
+}
+
+</style>
+</head>
+<body>
+<!-- <img src="/images/back.png" style=" width: 50%; text-align: center; float: right; margin-top: 20px;margin-left: 20px;"> -->
+<table id="tab">
+	<tr>
+		<td id="td1">
+			<div class="card shadow md-3" style="width: 100%;">
+			<div class="card-header py-3">
+<!-- 			<i class="fas fa-fw fa-user-lock" style="font-size: 20px; "></i> -->
+				<h6 style="width: 100px; display: inline;" class="m-0 font-weight-bold text-default" >🔒 내 정보</h6>
+				<a id="more" href="/mypage?empId=${EMP.empId }" style="color: gray;  "><h6 style="float: right; " class="m-0 font-weight-bold text-default"><i class="fas fa-plus"></i></h6></a>
+			</div>
+	
+			<div class="card-body" style="  height: 20%">
+				<div class="table-responsive">
+					<table class="table" id="dataTable" width="100%"
+						cellspacing="0">
+						<tbody>
+						<tr><td rowspan="5"><img id="men" src="${pageContext.request.contextPath}/profileImgView?empId=${EMP.empId}" style="border-radius: 70%; width:120px; height:150px; overflow: hidden; margin-left: 10%; margin-top: 5%; "></td></tr>
+							<tr>
+								<td>이름</td>
+								<td>${EMP.empNm}</td>
+							</tr>
+							<tr>
+								<td>아이디</td>
+								<td>${EMP.empId}</td>
+							</tr>
+							<tr>
+								<td>부서</td>
+								<td>${emp.deptId}</td>
+							</tr>
+							<tr>
+								<td>직급</td>
+								<td>${emp.jobtitleId}</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+			</div>
+		</div>
+		</td>
+		<td id="td2">
+		<div class="card shadow md-3" style="width: 100%; height: 315px; overflow: auto;">
+			<div class="card-header py-3">
+	<!-- 		<i class="fas fa-fw fa-bullhorn" style="font-size: 20px; "></i> -->
+				<h6 style="width: 100px; display: inline;" class="m-0 font-weight-bold text-default" >📢 공지사항</h6>
+				<a id="more" href="/notice" style="color: gray;  "><h6 style="float: right; " class="m-0 font-weight-bold text-default"><i class="fas fa-plus"></i></h6></a>
+			</div>
+	
+			<div class="card-body" style="height: 20%">
+				<div class="table-responsive">
+					<table class="table" id="dataTable" width="100%"
+						cellspacing="0">
+						<tbody>
+						<c:forEach items="${NoticeList }" var="notice">
+	                          <c:if test="${notice.noticeSt == 'Y' }">
+	 	                             <tr >
+	 	                             <td></td>
+	                                <td><a href="/noticeDetail?noticeSeq=${notice.noticeSeq }">
+	<%--                                 ${notice.title } --%>
+	                                ${fn:substring(notice.title,0,26) }
+	                                </a></td>
+	                                <td>
+									<fmt:formatDate value="${notice.updDt }" pattern="yyyy-MM-dd"/>
+									</td>
+	                              </tr>
+	                           </c:if>
+	                     </c:forEach>
+						</tbody>
+					</table>
+				</div>
+			</div>
+		</div>
+		</td>
+		
+		<td id="td3">
+		
+		<div class="card shadow md-3" style="width: 100%;">
+					<div class="card-header py-3">
+<!-- 						<i class="fas fa-envelope-open" style="font-size: 20px;"></i> -->
+<!-- 								<h5 style=" font-size: 1.5em; display: inline;">✉ </h5> -->
+						<h6 style="width: 100px; display: inline;"
+							class="m-0 font-weight-bold text-default">📩 메일함</h6>
+						<a id="more" href="/mail/list" style="color: gray;"><h6
+								style="float: right;" class="m-0 font-weight-bold text-default"><i class="fas fa-plus"></i></h6></a>
+					</div>
+
+					<div class="card-body" style="height: 20%">
+						<div class="table-responsive">
+							<table class="table" id="dataTable" width="100%" cellspacing="0" style="text-align: center;">
+								<tbody>
+									<c:forEach items="${MailList }" begin="0" end="3" var="mail">
+										<tr>
+											<td><a href="/mail/detail?mailSeq=${mail.mailSeq}">${mail.title}</a></td>
+											<td>${mail.sender}@sendbox.com</td>
+										</tr>
+									</c:forEach>
+									<c:if test="${fn:length(MailList) == 0 }">
+										<tr>
+											<td colspan="4" style="text-align: center;">받은 메일이 없습니다.</td>                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             
+										</tr>
+									</c:if>
+								</tbody>
+							</table>
+						</div>
+					</div>
+				</div>
+				
+				
+		
+		
+		</td>
+		
+	</tr>
+	
+	
+	<tr>
+			<td id="td1">
+			
+			<div class="card shadow md-3" style="width: 100%;">
+					<div class="card-header py-3">
+<!-- 						<i class="fas fa-fw fa-clock" style="font-size: 20px;"></i> -->
+						<h6 style="width: 100px; display: inline;"
+							class="m-0 font-weight-bold text-default">⏲ 이번주 근태</h6>
+						<a id="more" href="/myattend?empId=${EMP.empId }" style="color: gray;"><h6
+								style="float: right;" class="m-0 font-weight-bold text-default"><i class="fas fa-plus"></i></h6></a>
+					</div>
+
+					<div class="card-body" style="height: 20%">
+						<div class="table-responsive">
+							<table class="table" id="dataTable" width="100%" cellspacing="0">
+								<tbody>
+									<tr>
+										<td>
+<canvas id="weekcanvas" width ="400" height = "250"></canvas>
+</td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+					</div>
+				</div>
+				
+
+			</td>
+			<td id="td2">
+			
+			
+			<div class="card shadow md-3" style="width: 100%;">
+				<div class="card-header py-3 card-tab">
+		<!-- 		<i class="far fa-file-alt" style="font-size: 20px; "></i> -->
+					<div id="report" class="m-0 font-weight-bold text-default tab active-tab" onclick="javascript:tabClick(this)">
+						📑 진행중인 서류
+					</div>
+					<div id="approval" class="m-0 font-weight-bold text-default tab" onclick="javascript:tabClick(this)" >
+						📝 결재할 서류
+					</div>
+					<a class="more reportMore" href="/reporting" style="color: gray;"><h6 style="float: right;  padding-top: 20px;" class="m-0 font-weight-bold text-default report"><i class="fas fa-plus"></i></h6></a>
+					<script type="text/javascript">
+						function tabClick(div){
+							var tabArr = document.querySelectorAll('.tab');
+							var aTag = document.querySelector('.reportMore');
+							console.log(tabArr);
+							console.log(aTag);
+							for (var i = 0; i<tabArr.length; i++){
+								tabArr[i].classList.remove('active-tab');
+							}
+							console.log(div.id);
+							div.classList.add('active-tab');
+							if(div.id === 'report'){
+								aTag.setAttribute('href', '/reporting');
+								console.log(aTag.href);
+							}
+							if(div.id === 'approval'){
+								aTag.setAttribute('href', '/report/approvListView');
+								console.log(aTag.href);
+							}
+							
+							getListAjax(aTag.href);
+						}
+						
+						function getListAjax(url){
+							$.ajax({
+								url : url,
+								data : {'uploadtoken' : 'ajax'},
+								type : 'post',
+								success : function(data){
+									$('#listTable').html(data);
+								}
+							})
+						}
+					</script>
+				</div>
+
+				<div class="card-body" style="height: 330px;" >
+					<div class="table-responsive" id="listTable">
+					</div>
+				</div>
+			</div>
+			
+			</td>
+			<td id="td3">
+			<div class="card shadow md-3" style="width: 100%; height: 390px;">
+					<div class="card-header py-3">
+<!-- 						<i class="far fa-calendar-alt" style="font-size: 20px;"></i> -->
+						<h6 style="width: 100px; display: inline;"
+							class="m-0 font-weight-bold text-default">📆 연차 내역</h6>
+						<a id="more" href="/vacate/myVacatePage" style="color: gray;"><h6 style="float: right;" class="m-0 font-weight-bold text-default"><i class="fas fa-plus"></i></h6></a>
+					</div>
+
+					<div class="card-body" style="height: 20%; margin-left: auto; margin-right: auto;">
+						<div class="table-responsive">
+							<div class="card">
+								<div class="card-body">
+									<canvas id="myChart2" height="200px;"></canvas> 
+									<div style="width: 100%; height: 40px; position: absolute; top: 50%; left: 0; margin-top: -10px; line-height:19px; text-align: center; z-index: 0;">
+									    <span style="font-size: 10px;">남은 일수</span>
+									    <h5 id="myVacationResPer"></h5>
+									</div>
+								</div>
+							</div> 
+						</div>
+					</div>
+				</div>
+			
+			</td>
+	
+	</tr>
+
+</table>
+
+<script>
+
+new Chart(document.getElementById("weekcanvas"), {
+    type: 'bar',
+    data: {
+        labels: ['월', '화', '수', '목', '금'],
+        datasets: [{
+            label: '근무 시간',
+            data: [${weeklist}],
+            borderColor: "rgba(255, 201, 14, 1)",
+            backgroundColor: "rgba(255, 201, 14, 0.5)",
+            fill: false,
+        }]
+    },
+    options: {
+        responsive: false,
+        title: {
+            display: false,
+            text: '막대 차트 테스트'
+        },
+        tooltips: {
+            mode: 'index',
+            intersect: false,
+        },
+        hover: {
+            mode: 'nearest',
+            intersect: true
+        },
+        scales: {
+            xAxes: [{
+                display: true,
+                scaleLabel: {
+                    display: false,
+                    labelString: 'x축'
+                },
+            }],
+            yAxes: [{
+                display: true,
+                ticks: {
+                    min : 4,
+            		max : 14,
+                    autoSkip: false
+                },
+                scaleLabel: {
+                    display: false,
+                    labelString: 'y축'
+                }
+            }]
+        }
+    }
+});
+</script>	
+	
+<!-- 도넛 차트 라인 -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js" 
+	integrity="sha384-UO2eT0CpHqdSJQ6hJty5KVphtPhzWj9WO1clHTMGa3JDZwrnQq4sF86dIHNDz0W1"
+	crossorigin="anonymous"></script>
+<!-- <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"  -->
+<!-- 	integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"  -->
+<!-- 	crossorigin="anonymous"></script> -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@2.8.0"></script>
+<script> 
+$(function(){
+	
+	getListAjax('/reporting');
+	
+	myUseVacateCnt = 0; // 사용 일수
+	myAllVacateCnt = 0; // 내 연가
+	
+	
+	$.ajax({
+		url	: "/vacate/empVacateinfo",
+		dataType : "json",
+		method : "post",
+		success : function(data){
+			
+			console.log("data : ", data);
+			
+			myUseVacateCnt = parseInt(data.myUseVacateCnt);
+			myAllVacateCnt = parseInt(data.myVacateDayCnt - myUseVacateCnt);
+			
+			console.log(myUseVacateCnt)
+			console.log(myAllVacateCnt)
+			
+			// 도넛형 차트에 들어갈 데이터 설정
+			data = { 
+				datasets: [{ 
+					backgroundColor: ['#357BFE','#97AED8'], 
+					data: [myUseVacateCnt, myAllVacateCnt]
+				}], // 라벨의 이름이 툴팁처럼 마우스가 근처에 오면 나타남
+				labels: ['사용휴가','남은연가'],
+			}; 
+			// 도넛형 차트 
+			var ctx2 = document.getElementById("myChart2"); 
+			var myDoughnutChart = new Chart(ctx2, { 
+				type: 'doughnut', 
+				data: data, 
+				options: {
+					maintainAspectRatio: false,
+			    	tooltips: {
+				        displayColors: false,
+					},
+			        legend: { display: true },
+			      	cutoutPercentage: 70,
+				},
+			});
+			// 도넛 가운데 공간에 들어갈 데이터 설정 ==> 남은 일수
+			var myVacateDate = myAllVacateCnt;
+			$("#myVacationResPer").text(myVacateDate + "일")
+		},
+		error	: function(error){
+			alert("error code : ", error.status);
+		}
+	});
+});
+</script>	
+	
+	
+
+
+
+
+</body>
+</html>

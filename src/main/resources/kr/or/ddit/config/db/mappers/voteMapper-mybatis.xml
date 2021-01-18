@@ -1,0 +1,334 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.vote.dao.VoteMapperDao">
+
+
+	
+	
+    
+	<select id="selectVotePostList" parameterType="kr.or.ddit.vote.vo.VotePostVO" resultType="kr.or.ddit.vote.vo.VotePostVO">
+SELECT vp.*
+		FROM (SELECT rownum as rn,
+					 vote_post_seq,
+					 emp_id,
+					 emp_nm,
+					 vote_post_title,
+					 vote_post_cont,
+					 vote_post_party_cnt,
+					 vote_post_emp_cnt,
+					 vote_post_dt,
+					 vote_post_st,
+					 vote_post_start_dt,
+					 vote_post_end_dt
+				FROM VOTE_POST
+				<where>
+					<if test="empId != null and !''.equals(empId)">
+						AND emp_id = #{empId}
+					</if>
+					<if test="searchCondition != null and !''.equals(searchCondition) and searchKeyword != null and !''.equals(searchKeyword)">
+						<choose>
+							<when test="searchCondition.equals('vote_post_st')">
+								<choose>
+									<when test="'END'.equals(searchKeyword)">
+										AND ${searchCondition} like '%' ||'ING'|| '%'
+										AND vote_post_end_dt <![CDATA[<]]> SYSDATE-1
+									</when>
+									<when test="'ING'.equals(searchKeyword)">
+										AND ${searchCondition} like '%' ||'ING'|| '%'
+										AND vote_post_end_dt <![CDATA[>]]> SYSDATE-1
+									</when>
+									<when test="!'ING'.equals(searchKeyword) and !'END'.equals(searchKeyword)">
+										AND ${searchCondition} like '%' || #{searchKeyword} || '%'
+									</when>
+								</choose>
+							</when>
+							<otherwise>
+								AND ${searchCondition} like '%' || #{searchKeyword} || '%'
+							</otherwise>
+						</choose>
+					</if>
+				</where>
+				ORDER BY vote_post_seq desc) vp
+		WHERE rn BETWEEN (#{pageIndex}-1) * #{recordCountPerPage} + 1 AND #{pageIndex} * #{recordCountPerPage}
+</select>
+	
+	
+	
+	
+	
+	
+	
+	
+	<select id="selectVotePostPageAllCount" resultType="int" parameterType="kr.or.ddit.vote.vo.VotePostVO">
+		SELECT COUNT(*) 
+		FROM VOTE_POST
+		<where>
+			<if test="empId != null">
+				AND emp_id = #{empId}
+			</if>
+			<if test="searchCondition != null and !''.equals(searchCondition) and searchKeyword != null and !''.equals(searchKeyword)">
+				<choose>
+					<when test="searchCondition.equals('vote_post_st')">
+						<choose>
+							<when test="'END'.equals(searchKeyword)">
+								AND ${searchCondition} like '%' || 'ING' || '%'
+								AND vote_post_end_dt <![CDATA[<]]> SYSDATE-1
+							</when>
+							<when test="'ING'.equals(searchKeyword)">
+								AND ${searchCondition} like '%' || #{searchKeyword} || '%'
+								AND vote_post_end_dt <![CDATA[>]]> SYSDATE
+							</when>
+							<when test="!'ING'.equals(searchKeyword) and !'END'.equals(searchKeyword)">
+								AND ${searchCondition} like '%' || #{searchKeyword} || '%'
+							</when>
+						</choose>
+					</when>
+					<otherwise>
+						AND ${searchCondition} like '%' || #{searchKeyword} || '%'
+					</otherwise>
+				</choose>
+			</if>
+		</where>
+	</select>
+	
+	
+	
+	
+	
+	<select id="selectVotePostEmpJobTitle" parameterType="String" resultType="kr.or.ddit.jobTitle.vo.JobTitleVO">
+		SELECT JOBTITLE_ID,
+			   JOBTITLE_NM
+		FROM JOB_TITLE
+		WHERE JOBTITLE_ID = (SELECT JOBTITLE_ID
+	                         FROM EMP
+	                         WHERE EMP_ID = #{empId})
+	</select>
+	
+	
+	
+	
+
+
+	<select id="selectVotePostEmpDeptInfo" parameterType="kr.or.ddit.jobTitle.vo.JobTitleVO" resultType="kr.or.ddit.vote.vo.VotePostEmpDeptVO">
+		<choose>
+			<when test="jobtitleId lt 3">
+				select buseu.dept_name as dept_name, 
+					   team.dept_name as team_name
+				  from (select dept_name 
+				          from dept 
+				         where dept_id = (select dept_id 
+				                            from emp 
+				                           where emp_id = #{empId})) team,
+				       (select dept_name
+				          from dept
+				         where dept_id = (select UPPER_DEPT_ID 
+				                            from dept 
+				                           where dept_id = (select dept_id 
+				                                              from emp 
+				                                             where emp_id = #{empId}))) buseu
+			</when>
+			<when test="jobtitleId gte 3">
+				select team.dept_name as dept_name
+				  from (select dept_name 
+				          from dept 
+				         where dept_id = (select dept_id 
+				                            from emp 
+				                           where emp_id = #{empId})) team
+			</when>
+		</choose>
+	</select>
+
+
+
+
+
+
+
+
+
+	<select id="selectVotePostInfo" parameterType="kr.or.ddit.vote.vo.VotePostVO" resultType="kr.or.ddit.vote.vo.VotePostVO">
+		SELECT vote_post_seq,
+			   emp_id,
+			   vote_post_title,
+			   emp_nm,
+			   vote_post_cont,
+			   vote_post_party_cnt,
+			   vote_post_emp_cnt,
+			   vote_post_st,
+			   vote_post_dt,
+			   vote_post_start_dt,
+			   vote_post_end_dt
+		FROM vote_post
+		WHERE vote_post_seq = #{votePostSeq}
+	</select>
+
+
+
+
+
+
+	<select id="selectVotePostItemList" resultType="kr.or.ddit.vote.vo.VoteItemVO" parameterType="kr.or.ddit.vote.vo.VotePostVO">
+		SELECT vote_item_seq,
+			   vote_post_seq,
+			   vote_item_code,
+			   vote_item_nm
+		FROM vote_item
+		WHERE vote_post_seq = #{votePostSeq}
+		ORDER BY vote_item_seq
+	</select>
+
+
+
+
+
+	<select id="selectVoteRepleList" resultType="kr.or.ddit.vote.vo.VoteRepleVO" parameterType="kr.or.ddit.vote.vo.VotePostVO">
+		SELECT vote_reple_seq,
+			   vote_post_seq,
+			   emp_id,
+			   emp_nm,
+			   vote_reple_cont,
+			   vote_reple_st,
+			   vote_reple_dt
+		FROM vote_reple
+		WHERE vote_post_seq = #{votePostSeq}
+		ORDER BY vote_reple_dt
+	</select>
+
+
+
+
+
+
+
+	<select id="selectEmpVoteList" resultType="kr.or.ddit.vote.vo.EmpVoteVO" parameterType="kr.or.ddit.vote.vo.VotePostVO">
+		SELECT emp_vote_seq,
+			   vote_post_seq,
+			   vote_item_code,
+			   emp_id,
+			   emp_vote_st,
+			   emp_vote_dt
+		FROM emp_vote
+		WHERE vote_post_seq = #{votePostSeq}
+	</select>
+
+
+
+	<select id="selectVotePostSeqInfo" resultType="int">
+		SELECT VOTE_POST_SEQ.nextval
+	  	FROM dual
+	</select>
+
+
+
+
+	<insert id="insertVotePostInfo" parameterType="kr.or.ddit.vote.vo.VotePostVO">
+		INSERT INTO vote_post ( vote_post_seq,
+							    emp_id,
+							    emp_nm,
+							    vote_post_title,
+							    vote_post_cont,
+							    vote_post_emp_cnt,
+							    vote_post_st,
+							    vote_post_dt,
+							    vote_post_start_dt,
+							    vote_post_end_dt) 
+				VALUES (#{votePostSeq},
+						#{empId},
+						#{empNm},
+						#{votePostTitle},
+						#{votePostCont},
+						0,
+						'ING',
+						SYSDATE,
+						#{votePostStartDt},
+						#{votePostEndDt})
+	</insert>
+
+
+
+
+
+
+
+
+
+
+
+	<insert id="insertVoteItemInfo" parameterType="kr.or.ddit.vote.vo.VoteItemVO">
+		INSERT INTO vote_item ( vote_item_seq,
+							    vote_post_seq,
+							    vote_item_code,
+							    vote_item_nm,
+							    vote_item_st)
+				VALUES (VOTE_ITEM_SEQ.nextval,
+						#{votePostSeq},
+						#{voteItemCode},
+						#{voteItemNm},
+						'Y')
+	</insert>
+
+
+
+
+
+
+
+	<insert id="insertVoteReple" parameterType="kr.or.ddit.vote.vo.VoteRepleVO">
+		INSERT INTO vote_reple ( vote_reple_seq,
+							     vote_post_seq,
+							     emp_id,
+							     emp_nm,
+							     vote_reple_cont,
+							     vote_reple_st,
+							     vote_reple_dt) 
+				VALUES (VOTE_REPLE_SEQ.nextval,
+						#{votePostSeq},
+						#{empId},
+						#{empNm},
+						#{voteRepleCont},
+						'Y',
+						SYSDATE)
+	</insert>
+	
+	
+	
+	
+	
+	
+	
+	<insert id="insertVoteEmp" parameterType="kr.or.ddit.vote.vo.EmpVoteVO">
+		INSERT INTO emp_vote ( emp_vote_seq,
+							   vote_post_seq,
+							   emp_id,
+							   vote_item_code,
+							   emp_vote_st,
+							   emp_vote_dt) 
+				VALUES (EMP_VOTE_SEQ.nextval,
+						#{votePostSeq},
+						#{empId},
+						#{voteItemCode},
+						'Y',
+						SYSDATE)
+	</insert>
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	<update id="votePostStatusUpdate" parameterType="kr.or.ddit.vote.vo.VotePostVO">
+		UPDATE vote_post
+		    SET vote_post_st = #{votePostSt}
+		WHERE vote_post_seq = #{votePostSeq}
+	</update>
+
+
+
+
+
+
+</mapper>

@@ -1,0 +1,364 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+    pageEncoding="UTF-8"%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+<%@taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
+
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script> -->
+<!-- <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/js/bootstrap.min.js"></script> -->
+<script type="text/javascript">
+
+   $(function(){
+	   
+	   openLeftId = "${openLeftId}";
+	   menuLocation = "${menuLocation}";
+	   subEmpId = "";
+	   $('#subEmpIdSelect').on('change', function(){
+		   subEmpId = $(this).val();
+		   //console.log("left subEmpId :" + subEmpId);
+	   });
+	   
+	   console.log("open : "+ openLeftId);
+	   console.log('menu : '+ menuLocation);
+	   
+	   loadLeftMenu(openLeftId, menuLocation, subEmpId);
+	   
+	   
+	   $('.collapse-item').on('click', function(event){
+		   event.preventDefault();
+		   var url = $(this).attr('href');
+		   menuLocation = $(this).attr('id');
+		   loadLeftMenu(openLeftId, menuLocation, subEmpId);
+		   document.location = url;	        		        
+	   })
+	   
+	   $('.collapse').on('shown.bs.collapse hidden.bs.collapse', function(){
+		   console.log('ajax 전송 시작');
+		   openLeftId = $('.show').attr('id');
+		   loadLeftMenu(openLeftId, menuLocation, subEmpId);
+		   console.log('전송완료');
+	   })
+	   
+	   if(menuLocation != null && menuLocation != ''){
+		   var menuElement = document.getElementById(menuLocation);
+		   console.log('메뉴 위치 불러옴');
+		   $('.collapse-item').css({'font-weight' : '', 'color' : ''});
+		   $(menuElement).css({'font-weight' : 'bold', 'color' : '#154999'});
+	   }
+	   
+	   if(openLeftId != null && openLeftId != ''){
+		   var openElement = document.getElementById(openLeftId);
+		   console.log('세션 불러옴');
+		   $(openElement).collapse('show');
+	   }
+	     
+	  var deptId = "${EMP.deptId}";
+	  var empId = "${EMP.empId}";
+      
+   		// 화상회의 레이어에서 입장버튼 클릭 함수
+		$("#faceChatGoBtn").on("click", function() {
+			faceChatRoomId = $("#faceChatRoomId").val();
+			if (faceChatRoomId != "") {
+
+				var uri = "/faceMeet/facemeetingView?faceChatRoomId="+faceChatRoomId;
+				var popupName = "화상회의 ["+faceChatRoomId+"]";
+				var options = "width=490,height=500";
+
+				window.open(uri, popupName, options);
+				$("#faceMeetModal").modal("hide");
+
+			} else {
+				alert("방 id를 설정해주세요.");
+			}
+		});
+   		
+	});
+   
+   
+   
+   //사용자 정의 함수
+   loadLeftMenu = function(openLeftId, menuLocation, subEmpId){
+	   $.ajax({
+			url : '/main/left',
+			data : {
+					"openLeftId" : openLeftId,
+				    "menuLocation" : menuLocation,
+				    "subEmpId" : subEmpId
+				    },
+			dataType : 'json',
+			async : false,
+			success : function(res){
+			   var html ='<img alt="새글 표시" src="/images/announcement.png">';
+			   console.log("반려 건수 : "+res.leftItemVo.declineCnt);
+				if(res.leftItemVo.completeCnt > 0){
+			   		$('#compCnt').html(html);
+				}
+				if(res.leftItemVo.declineCnt > 0){
+			   		$('#decCnt').html(html);
+				}
+				if(res.leftItemVo.approvCnt > 0){
+					$('#approvCnt').html(html);
+				}
+				if(res.leftItemVo.approvFinCnt > 0){
+					$('#approvFinCnt').html(html);
+				}
+				
+			   /* $('#approvCnt').text('('+res.leftItemVo.approvCnt+')');
+			   $('#approvFinCnt').text('('+res.leftItemVo.approvFinCnt+')'); */
+			}
+	   })		   
+   }
+   
+   nonAccordionMenu = function(url){
+	   loadLeftMenu("", "");
+	   document.location = "/"+url;
+   } 
+     
+</script>
+<style type="text/css">
+span img{
+	width : 17px;
+	height : 17px;
+}
+
+#accordionSidebar{
+background-color: #1e2c54;
+}
+
+@font-face {
+    font-family: 'InfinitySans-RegularA1';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/noonfonts_20-04@2.1/InfinitySans-RegularA1.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+}
+body{
+  font-family: 'InfinitySans-RegularA1';
+}
+</style>
+
+</head>
+<body>
+
+   <!-- Sidebar -->
+        <ul class=" navbar-nav sidebar sidebar-dark accordion" id="accordionSidebar">
+
+            <!-- Sidebar - Brand -->
+             <a href="javascript:nonAccordionMenu('main')"><img id="logo" src="/images/mainlogo.png" style="width: 100%; margin-top: 0px; height: 70px; "></a>
+
+            <!-- Divider -->
+            <hr class="sidebar-divider my-0">
+
+            <!-- Nav Item - Dashboard -->
+            <li class="nav-item active">
+               <img id="men" src="${pageContext.request.contextPath}/profileImgView?empId=${EMP.empId} " style="width:70px; height: 80px; border-radius: 60%; overflow: hidden; margin:10px;" >
+<%--                <img id="men" src="${pageContext.request.contextPath}/profileImgView?emp_id=emp0001" style="width:70px; height: 80px; border-radius: 60%; overflow: hidden; margin:10px;" > --%>
+               <div style=" float: right; text-align:center; margin-top: 25px; margin-right:5px;">
+                    <span style="color: white; ">${EMP.empNm}
+                    <c:if test="${EMP.jobtitleId == 0}">사원</c:if>
+                    <c:if test="${EMP.jobtitleId == 1}">대리</c:if>
+                    <c:if test="${EMP.jobtitleId == 2}">팀장</c:if>
+                    <c:if test="${EMP.jobtitleId == 3}">부장</c:if>
+                    <c:if test="${EMP.jobtitleId == 4}">CEO</c:if>
+                   </span><br>
+                    <span style="color: white;font-size: 0.7em;" >${EMP.empId}@sendbox.com</span>
+               </div>
+            </li>
+
+            <!-- Divider -->
+            <hr class="sidebar-divider">
+
+            <!-- Heading -->
+            <div class="sidebar-heading">
+                Task
+            </div>
+            
+             
+            <li class="nav-item">
+                <a class="nav-link" href="javascript:nonAccordionMenu('notice')">
+                    <i class="fas fa-fw fa-bullhorn" style="color: white;"></i>
+                    <span>공지사항</span></a>
+            </li>
+            
+
+            <!-- Nav Item - Pages Collapse Menu -->
+            <li class="nav-item">
+                <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseTwo"
+                    aria-expanded="true" aria-controls="collapseTwo">
+                    <i class="fas fa-fw fa-briefcase" style="color: white;"></i>
+                    <span>업무</span>
+                </a>
+                <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo" data-parent="#accordionSidebar">
+                    <div class="bg-white py-2 collapse-inner rounded" style="opacity : 0.5;">
+                    <div id="workBoard">
+                    	<%-- <c:forEach items="${busiBoardList }" var="busiBoard" varStatus="status"> --%>
+                    		<a class="collapse-item" id="busi${busiBoard.boardId }" href="/selectPostList?boardId=${busiBoardList[0].boardId}">
+                    			<%-- ${busiBoard.boardNm } --%>업무보고
+                    		</a>
+<%--                     	</c:forEach> --%>
+<%-- 	                  	<c:forEach items="${libraryList}" var="lib" varStatus="status"> --%>
+                    		<a class="collapse-item" id="lib${lib.libraryId }" href="/library?libraryId=${libraryList[0].libraryId }">
+                    			<%-- ${lib.libraryNm } --%>자료실
+                    		</a>
+   <%--                  	</c:forEach> --%>
+                    </div>
+<!--                         <h6 class="collapse-header">Custom Components:</h6> -->
+                        <%-- <a class="collapse-item" href="/selectBoard">게시판</a> --%>
+<%-- 	                    <a class="collapse-item" href="/library?deptId=${EMP.deptId}">자료실</a> --%>
+                    	<a class="collapse-item" id="schedule" href="/schedule?deptId=${EMP.deptId}">스케줄 관리</a>
+                        <a class="collapse-item" id="meeting" href="/meeting?deptId=${EMP.deptId}">회의실예약</a>
+                         <c:if test="${EMP.deptId == '0000' || EMP.deptId == '0002' || DEPT.upperDeptId == '0002'}">
+	                     	<jsp:useBean id="now" class="java.util.Date" />
+	                     	<fmt:formatDate value="${now}" pattern="yyyy" var="year"/>
+                            <fmt:formatDate value="${now}" pattern="MM" var="month"/>
+	                        <a class="collapse-item" id="salary" href="/salary/manage?year=${year }&month=${month }">급여관리</a>
+	                        <a class="collapse-item" id="empManage" href="/empManage">사원관리</a>
+                        </c:if>
+                        <c:if test="${EMP.deptId == '0000'}">
+	                        <a class="collapse-item" id="deptManage" href="/dept/deptManage">부서관리</a>
+                        </c:if>
+                    
+                    </div>
+                </div>
+            </li>
+
+            <!-- Nav Item - Utilities Collapse Menu -->
+            <li class="nav-item">
+                <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseUtilities"
+                    aria-expanded="true" aria-controls="collapseUtilities">
+                    <i class="fas fa-fw fa-signature" style="color: white;"></i>
+                    <span>전자결재</span>
+                </a>
+                <div id="collapseUtilities" class="collapse" aria-labelledby="headingUtilities"
+                    data-parent="#accordionSidebar">
+                    <div class="bg-white py-2 collapse-inner rounded" style="opacity : 0.5;">
+<!--                         <h6 class="collapse-header">Custom Utilities:</h6> -->
+						
+                        <a class="collapse-item" id="makeReport" href="/report/settingView?empId=${EMP.empId}">서류제출</a>
+                        <a class="collapse-item" id="reportWait" href="/reportWait">서류대기함</a>
+                        <a class="collapse-item" id="reporting" href="/reporting">서류진행함</a>
+                        <a class="collapse-item" id="complete" href="/reportSuccess">서류완료함&nbsp;<span id="compCnt"></span></a>
+                        <a class="collapse-item" id="decline" href="/reportFail">서류반려함&nbsp;<span id="decCnt"></span></a>
+                        
+                        <c:if test="${EMP.authLv >= 1}">
+                        	<c:choose>
+                        		<c:when test="${subWorker != null && subWorker.subEmpAuthLv == 0 }">
+		                        	<a class="collapse-item" id="approvWait" href="/report/approvListView?subEmpId=${subWorker.empId}">결재대기함&nbsp;<span id="approvCnt"></span></a>
+		                        	<a class="collapse-item" id="approvFin" href="/report/approvFinListView?subEmpId=${subWorker.empId}">결재완료함&nbsp;<span id="approvFinCnt"></span></a>
+                        		</c:when>
+                        		<c:otherwise>
+		                        	<a class="collapse-item" id="approvWait" href="/report/approvListView?approver=${EMP.empId }">결재대기함&nbsp;<span id="approvCnt"></span></a>
+		                        	<a class="collapse-item" id="approvFin" href="/report/approvFinListView">결재완료함&nbsp;<span id="approvFinCnt"></span></a>
+                        		</c:otherwise>
+                        	</c:choose>
+                        </c:if>
+                    </div>
+                </div>
+            </li>
+            
+             
+<%--             <c:if test="${EMP.deptId == '0000'}"> --%>
+<!-- 	            <li class="nav-item"> -->
+<!-- 	                <a class="nav-link" href="javascript:nonAccordionMenu('salesView')"> -->
+<!-- 	                    <i class="fas fa-fw fa-chart-bar" style="color: white;"></i> -->
+<!-- 	                    <span>매출관리</span></a> -->
+<!-- 	            </li> -->
+<%--             </c:if> --%>
+
+            <!-- Divider -->
+            <hr class="sidebar-divider">
+
+            <!-- Heading -->
+            <div class="sidebar-heading">
+                communication
+            </div>
+
+
+
+
+
+			<!-- Nav Item - Utilities Collapse Menu -->
+            <li class="nav-item">
+                <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseVotePages"
+
+                    aria-expanded="true" aria-controls="#collapseVotePages">
+
+                    <i class="fas fa-vote-yea" style="color: white;"></i>
+                    <span>전자투표</span>
+                </a>
+                <div id="collapseVotePages" class="collapse" aria-labelledby="headingUtilities"
+                    data-parent="#accordionSidebar">
+                    <div class="bg-white py-2 collapse-inner rounded" style="opacity : 0.5;">
+						
+<%--                         <a class="collapse-item" id="voteCreate" href="${pageContext.request.contextPath }/vote/votePostCreateView">투표 만들기</a> --%>
+                        <a class="collapse-item" id="voteList" href="${pageContext.request.contextPath }/vote/votePostListView">전체 투표함</a>
+                        <a class="collapse-item" id="myVoteList" href="${pageContext.request.contextPath }/vote/myVotePostListView">작성 투표함</a>
+                        
+                    </div>
+                </div>
+            </li>
+
+
+            <!-- Nav Item - Pages Collapse Menu -->
+            
+            <li class="nav-item">
+                <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapsePages"
+                    aria-expanded="true" aria-controls="collapsePages">
+                    <i class="fas fa-fw fa-gamepad" style="color: white;"></i>
+                    <span>커뮤니티</span>
+                </a>
+                <div id="collapsePages" class="collapse" aria-labelledby="headingPages" data-parent="#accordionSidebar">
+                    <div class="bg-white py-2 collapse-inner rounded" style="opacity : 0.5;">
+                        <a class="collapse-item" id="community" href="${pageContext.request.contextPath}/commu/commuKindView">커뮤니티</a>
+                        <a class="collapse-item" id="freeboard" href="${pageContext.request.contextPath}/freeBoard/freeBoardList">자유게시판</a>
+                        <a class="collapse-item" id="myCommunity" href="${pageContext.request.contextPath}/commu/myCommuManage">내 커뮤니티</a>
+                    </div>
+                </div>
+            </li>
+            
+
+            <!-- Nav Item - Charts -->
+            <li class="nav-item">
+                <a class="nav-link" href="#" data-toggle="modal" data-target="#faceMeetModal">
+                    <i class="fas fa-fw fa-video" style="color: white;"></i>
+                    <span data-toggle="modal" data-target="#faceMeetModal">화상회의</span></a>
+            </li>
+            
+            
+            <!-- Modal -->
+			<div class="modal fade" id="faceMeetModal" tabindex="-1" role="dialog" aria-labelledby="faceMeetModalLabel" aria-hidden="true">
+			  <div class="modal-dialog" role="document">
+			    <div class="modal-content">
+			      <div class="modal-header">
+			        <h5 class="modal-title" id="faceMeetModalLabel">화상회의</h5>
+			        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+			          <span aria-hidden="true">&times;</span>
+			        </button>
+			      </div>
+			      <div class="modal-body">
+			        <div align="center">
+			        	<p>방 ID를 입력해주세요.</p>
+			        	ROOM ID : <input type="text" id="faceChatRoomId" class="btn btn-outline-secondary"/>
+			        </div>
+			      </div>
+			      <div class="modal-footer">
+			        <button type="button" class="btn btn-secondary" data-dismiss="modal">취소</button>
+			        <button type="button" id="faceChatGoBtn" class="btn btn-primary">입장</button>
+			      </div>
+			    </div>
+			  </div>
+			</div>
+            
+
+
+	         <li class="nav-item" style="margin-top: 260px; ">
+	              <a class="nav-link" href="javascript:nonAccordionMenu('guide')">
+	                 <i class="fas fa-fw fa-question-circle" style="font-size: 30px; color: white;"></i>
+	             </a>
+	         </li>
+        </ul>
+        <!-- End of Sidebar -->
+        </body>
+        </html>

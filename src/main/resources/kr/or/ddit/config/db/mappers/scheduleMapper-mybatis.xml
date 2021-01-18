@@ -1,0 +1,119 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.business.schedule.dao.ScheduleMapperDao">
+
+
+<select id="getDeptList" resultType="kr.or.ddit.business.schedule.vo.DeptVO">
+	select * from dept
+</select>
+
+<select id="getSchedule" parameterType="kr.or.ddit.business.schedule.vo.ScheduleVO" resultType="kr.or.ddit.business.schedule.vo.ScheduleVO">
+<!-- 	SELECT -->
+<!-- 	    sched_id, -->
+<!-- 	    dept_id, -->
+<!-- 	    content, -->
+<!-- 	    start_dt, -->
+<!-- 	    end_dt, -->
+<!-- 	start_time, -->
+<!--     end_time -->
+<!-- 	FROM -->
+<!-- 	    dept_sched -->
+<!-- 	    where dept_id = #{deptId} -->
+	SELECT
+	    A.sched_id,
+	    A.dept_id,
+	    A.content,
+	    A.start_dt,
+	    A.end_dt,
+	    A.start_time,
+	    A.end_time
+	FROM
+	    dept_sched A, (SELECT *
+	                         FROM dept
+	                         start with dept_id =#{deptId}
+				             connect by prior dept_id = upper_dept_id
+				             order siblings by dept_id)B
+	where A.dept_id = B.dept_id
+
+<!-- SELECT -->
+<!-- 	    A.sched_id, -->
+<!-- 	    C.dept_name as dept_id, -->
+<!-- 	    A.content, -->
+<!-- 	    A.start_dt, -->
+<!-- 	    A.end_dt, -->
+<!-- 	    A.start_time, -->
+<!-- 	    A.end_time -->
+<!-- 	FROM -->
+<!-- 	    (select * from dept_sched) A, (SELECT * -->
+<!-- 	                         FROM dept -->
+<!-- 	                         start with dept_id =#{deptId} -->
+<!-- 				             connect by prior dept_id = upper_dept_id -->
+<!-- 				             order siblings by dept_id)B, -->
+<!--                              (select * from dept) C -->
+<!-- 	where A.dept_id = B.dept_id and A.dept_id = C.dept_id -->
+</select>
+
+<insert id="addSchedule" parameterType="kr.or.ddit.business.schedule.vo.ScheduleVO">
+INSERT INTO dept_sched (
+    sched_id,
+    dept_id,
+    content,
+    start_dt,
+    end_dt,
+    start_time,
+    end_time
+) VALUES (
+    SCHED_SEQ.nextval,
+    #{deptId},
+    #{content},
+    TO_DATE(#{startDt}||#{startTime},'YYYY-MM-DD HH24:mi'),
+    TO_DATE(#{endDt}||#{endTime},'YYYY-MM-DD HH24:mi'),
+    #{startTime},
+    #{endTime}
+)
+</insert>
+
+<select id="selectSchedule" parameterType="kr.or.ddit.business.schedule.vo.ScheduleVO" resultType="kr.or.ddit.business.schedule.vo.ScheduleVO">
+SELECT
+    sched_id,
+    dept_id,
+    content,
+    to_char(start_dt,'YYYY-MM-DD') as start_dt,
+    to_char(end_dt,'YYYY-MM-DD') as end_dt,
+    start_time,
+    end_time
+FROM
+    dept_sched  
+	<where>
+		<if test="schedId != null">
+		and sched_id =  #{schedId}
+		</if>
+	</where>
+</select>
+
+<delete id="deleteSchedule" parameterType="kr.or.ddit.business.schedule.vo.ScheduleVO">
+	DELETE FROM dept_sched
+	<where>
+		<if test="schedId != null">
+		and sched_id =  #{schedId}
+		</if>
+	</where>
+</delete>
+<update id="updateSchedule" parameterType="kr.or.ddit.business.schedule.vo.ScheduleVO">
+UPDATE dept_sched
+    SET
+	    content = #{content},
+	    start_dt = TO_DATE(#{startDt},'YYYY-MM-DD HH24:mi'),
+	    end_dt = TO_DATE(#{endDt},'YYYY-MM-DD HH24:mi'),
+	    start_time = #{startTime},
+	    end_time = #{endTime}
+	<where>
+		<if test="schedId != null">
+		and sched_id =  #{schedId}
+		</if>
+	</where>
+
+</update>
+	
+	
+</mapper>

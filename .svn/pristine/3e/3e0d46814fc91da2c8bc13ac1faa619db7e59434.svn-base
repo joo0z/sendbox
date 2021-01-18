@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+
+<mapper namespace="kr.or.ddit.businessTree.dao.BusinessTreeMapperDao">
+
+
+
+
+
+	<select id="selectBusinessTreeList" resultType="kr.or.ddit.businessTree.vo.BusinessTreeVO" parameterType="kr.or.ddit.businessTree.vo.BusinessTreeVO">
+SELECT dept.dept_name as dept_name, 
+		       emp.emp_id as emp_id, 
+		       emp.emp_nm as emp_nm, 
+		       dept.dept_id as dept_id, 
+		       dept.upper_dept_id as upper_dept_id, 
+		       (select jobT.jobtitle_nm from job_title jobT where jobT.jobtitle_id = emp.jobtitle_id) as jobtitle,
+		       (select jobT.jobtitle_id from job_title jobT where jobT.jobtitle_id = emp.jobtitle_id) as jobtitle_id  
+		       
+		        <if test="startDt != null and startDt !=''">
+		       	,(case
+		       	  when reportT.end_dt &lt; cast(to_timestamp(#{startDt}, 'yyyy-mm-dd hh24:mi:ss.ff') as date)-1 then 'T'
+		       	  when reportT.start_dt &gt; cast(to_timestamp(#{endDt}, 'yyyy-mm-dd hh24:mi:ss.ff') as date)+1 then 'T'
+		       	  when reportT.start_dt is null then 'T'
+		       	  when reportT.end_dt is null then 'T'
+		       	  else 'F'
+		       	  end) as status_code
+		       </if>
+		       
+		FROM dept, (SELECT emp_id, emp_nm, dept_id, jobtitle_id
+		            FROM emp
+		            START WITH manager_id is null
+		            CONNECT by prior emp_id = manager_id
+		            ORDER SIBLINGS BY dept_id) emp
+		            
+		            <if test="startDt != null and startDt != ''">
+		            ,(	select VT.*
+							from(
+							SELECT ROW_NUMBER()OVER(PARTITION BY C.emp_id ORDER BY C.start_dt desc) AS RNUM,
+							       C.emp_id as emp_id,
+							       C.report_id as report_id,
+							       C.start_dt as start_dt,
+							       C.end_dt as end_dt
+							FROM report C, emp D
+							WHERE C.type_id in ('T2', 'T3', 'T4') --연차 or 반차
+							and C.emp_id = D.emp_id
+							AND (C.end_dt is not null and C.start_dt is not null)
+							and C.report_st != 'N'
+							group by C.emp_id, C.report_id, C.start_dt, C.end_dt
+							order by C.emp_id asc, C.start_dt desc
+							) VT
+							where VT.RNUM = 1
+		            ) reportT
+		            </if>
+		            
+		            
+		WHERE dept.dept_id = emp.dept_id
+		<if test="startDt != null and startDt !=''">
+		  and emp.emp_id = reportT.emp_id(+)		
+		</if>
+</select>
+	
+	
+	
+	
+</mapper>

@@ -1,0 +1,462 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.or.ddit.community.dao.CommuMapperDao">
+	
+	
+	
+	
+	<select id="selectMyCommuList" parameterType="kr.or.ddit.community.vo.CommuVO" resultType="kr.or.ddit.community.vo.CommuVO">
+		SELECT commu_seq,
+			   commu_nm,
+			   emp_id,
+			   reg_dt,
+			   commu_icon_nm,
+			   commu_icon_path,
+			   commu_st
+		FROM
+		    community
+		<where>
+			<if test="empId != ''">
+				AND emp_id = #{empId}
+			</if>
+		</where>
+	</select>
+	
+	
+	
+	
+	
+	<select id="selectCommuIcon" parameterType="kr.or.ddit.community.vo.CommuVO" resultType="kr.or.ddit.community.vo.CommuVO">
+		SELECT
+		    commu_seq,
+		    commu_nm,
+		    emp_id,
+		    reg_dt,
+		    commu_icon_nm,
+		    commu_icon_path,
+		    commu_st
+		FROM
+		    community
+		WHERE
+			commu_seq = #{commuSeq}
+	</select>
+	
+	
+	
+	
+
+	
+	<select id="selectListCommu" parameterType="kr.or.ddit.community.vo.CommuVO" resultType="kr.or.ddit.community.vo.CommuVO">
+		SELECT
+		    commu_seq,
+		    commu_nm,
+		    emp_id,
+		    reg_dt,
+		    commu_icon_nm,
+		    commu_icon_path,
+		    commu_st
+		FROM
+		    community
+		WHERE
+			commu_st = 'Y'
+		<if test="commuSeq != null">
+			AND commu_seq = #{commuSeq}
+		</if>
+	</select>
+	
+	
+	
+	
+	<select id="selectListCommuBKMK" resultType="kr.or.ddit.community.vo.CommuBKMKVO" parameterType="kr.or.ddit.community.vo.CommuVO">
+		SELECT
+		    commu_seq,
+		    emp_id,
+		    commu_nm
+		FROM
+		    commu_bkmk
+		<where>
+			<if test="empId != ''">
+				AND emp_id = #{empId}
+			</if>
+		</where>
+	</select>
+	
+	
+	
+	
+	
+	
+	
+	<insert id="insertCommu" parameterType="kr.or.ddit.community.vo.CommuVO">
+		INSERT INTO community (commu_seq,
+							   commu_nm,
+							   emp_id,
+							   reg_dt,
+							   commu_icon_nm,
+							   commu_icon_path,
+							   commu_st) 
+				VALUES (COMMU_SEQ.nextval,
+						#{commuNm},
+						#{empId},
+						sysdate,
+						#{commuIconNm},
+						#{commuIconPath},
+						'Y')
+	</insert>
+	
+	
+	
+	
+	<select id="selectListCommuPost" parameterType="kr.or.ddit.community.vo.CommuBoardVO" resultType="kr.or.ddit.community.vo.CommuBoardVO">
+		SELECT b.*
+		FROM (SELECT rownum as rn,
+				     board_seq,
+				     commu_seq,
+				     emp_id,
+				     emp_nm,
+				     board_title,
+				     board_cont,
+				     board_dt,
+				     board_st
+			   FROM commu_board
+			   WHERE commu_seq = #{commuSeq}
+				<if test="searchCondition != null and !''.equals(searchCondition)
+						  and searchKeyword != null and !''.equals(searchKeyword)">
+					and ${searchCondition} like '%' || #{searchKeyword} || '%'
+				</if>
+			   ORDER BY board_seq desc) b
+		WHERE rn between (#{pageIndex}-1) * #{recordCountPerPage} + 1 and #{pageIndex} * #{recordCountPerPage}
+	</select>
+	
+	
+	
+	
+	
+	
+	<select id="selectCommuBoard" parameterType="kr.or.ddit.community.vo.CommuBoardVO" resultType="kr.or.ddit.community.vo.CommuBoardVO">
+		SELECT board_seq,
+			   commu_seq,
+			   emp_id,
+			   emp_nm,
+			   board_title,
+			   board_cont,
+			   board_dt,
+			   board_st
+		FROM commu_board
+		WHERE board_seq = #{boardSeq}
+	</select>
+	
+	
+	
+	
+	
+
+
+
+
+	<select id="selectListCommuBoardFile" parameterType="kr.or.ddit.community.vo.CommuBoardFileVO" resultType="kr.or.ddit.community.vo.CommuBoardFileVO">
+		SELECT
+		    attachfile_seq,
+		    board_seq,
+		    filepath,
+		    realfilename
+		FROM
+		    commu_file
+		<where>
+			<if test="boardSeq != ''">
+				AND board_seq = #{boardSeq} AND attachfile_st = 'Y'
+			</if>
+			<if test="attachfileSeq != ''">
+				AND attachfile_seq = #{attachfileSeq}
+			</if>
+		</where>
+	</select>
+	
+	
+
+	<insert id="insertCommuBoard" parameterType="kr.or.ddit.community.vo.CommuBoardVO">
+		INSERT INTO commu_board (board_seq,
+							     commu_seq,
+							     emp_id,
+							     emp_nm,
+							     board_title,
+							     board_cont,
+							     board_dt,
+							     board_st) 
+					VALUES (
+					   	BOARD_SEQ.nextval,
+					    #{commuSeq},
+					    #{empId},
+					    #{empNm},
+					    #{boardTitle},
+					    #{boardCont},
+					   	SYSDATE,
+					    'Y')
+	</insert>
+	
+	
+	
+	
+	<insert id="insertCommuBoardFile" parameterType="kr.or.ddit.community.vo.CommuBoardFileVO">
+		INSERT INTO commu_file (attachfile_seq,
+							    board_seq,
+							    filepath,
+							    realfilename,
+							    attachfile_st) 
+					   VALUES (
+					    COMMU_ATTACHFILE_SEQ.NEXTVAL,
+					    <choose>
+					    	<when test="boardSeq == ''">
+					    		BOARD_SEQ.CURRVAL,
+					    	</when>
+					    	<otherwise>
+					    		#{boardSeq},					    	
+					    	</otherwise>
+					    </choose>
+					    #{filepath},
+					    #{realfilename},
+					    'Y')
+	</insert>
+	
+	
+	
+	
+	<select id="selectCurrval" resultType="int">
+		SELECT BOARD_SEQ.CURRVAL
+		FROM dual
+	</select>
+	
+	
+	
+	
+	
+	
+	
+	
+	<update id="updateCommuBoard" parameterType="kr.or.ddit.community.vo.CommuBoardVO">
+		UPDATE commu_board
+		    SET
+	        <choose>
+	        	<when test="boardTitle == '삭제된 게시글 입니다.'">
+	        		board_st = 'N'
+	        	</when>
+	        	<otherwise>
+	        		board_title = #{boardTitle},
+			        board_cont = #{boardCont},
+			        board_dt = SYSDATE
+	        	</otherwise>
+	        </choose>
+		WHERE emp_id = #{empId}
+		AND board_seq = #{boardSeq}
+	</update>
+
+
+
+
+
+
+
+	<update id="updateCommuBoardFile" parameterType="kr.or.ddit.community.vo.CommuBoardFileVO">
+		UPDATE commu_file
+		    SET
+		        attachfile_st = 'N'
+		WHERE
+		    attachfile_seq = #{attachfileSeq}
+	</update>
+	
+	
+	
+	
+	
+	
+	
+	
+	<select id="selectListReple" parameterType="kr.or.ddit.community.vo.CommuBoardRepleVO" resultType="kr.or.ddit.community.vo.CommuBoardRepleVO">
+		SELECT
+		    reple_seq,
+		    board_seq,
+		    emp_id,
+		    emp_nm,
+		    reple_cont,
+		    reple_dt,
+		    reple_st
+		FROM
+		    commu_reple
+		WHERE
+			board_seq = #{boardSeq}
+		ORDER BY 
+			reple_dt desc
+	</select>
+
+
+
+
+
+
+
+
+
+	<insert id="insertCommuReple" parameterType="kr.or.ddit.community.vo.CommuBoardRepleVO">
+		INSERT INTO commu_reple (reple_seq,
+							     board_seq,
+							     emp_id,
+							     emp_nm,
+							     reple_cont,
+							     reple_dt,
+							     reple_st) 
+				VALUES (POST_REPLE_SEQ.nextval,
+						#{boardSeq},
+						#{empId},
+						#{empNm},
+						#{repleCont},
+						sysdate,
+						'Y')
+	</insert>
+		
+		
+		
+		
+		
+		
+		
+	<update id="updateCommuRepleSt" parameterType="kr.or.ddit.community.vo.CommuBoardRepleVO">
+		UPDATE commu_reple
+		    SET
+		        reple_st = 'N'
+		WHERE
+		    reple_seq = #{repleSeq}
+	</update>
+	
+	
+	
+	
+
+	
+
+	<update id="updateCommu" parameterType="kr.or.ddit.community.vo.CommuVO">
+		UPDATE community
+		    SET
+		       commu_st = #{commuSt},
+		       commu_nm = #{commuNm},
+		       reg_dt = sysdate
+		WHERE
+		    commu_seq = #{commuSeq}
+	</update>
+
+
+
+
+
+
+	<select id="selectCommuBoardPageAllCount" parameterType="kr.or.ddit.community.vo.CommuBoardVO" resultType="int">
+		SELECT COUNT(*)
+		FROM
+		    commu_board
+		WHERE commu_seq = #{commuSeq}
+		<if test="searchCondition != null and !''.equals(searchCondition)
+				  and searchKeyword != null and !''.equals(searchKeyword)">
+			and ${searchCondition} like '%' || #{searchKeyword} || '%'
+		</if>
+	</select>
+	
+	
+	
+	
+	
+	
+	
+	<select id="selectMyBookMarkInfo" parameterType="kr.or.ddit.community.vo.CommuBKMKVO" resultType="kr.or.ddit.community.vo.CommuBKMKVO">
+		SELECT
+		    commu_seq,
+		    emp_id,
+		    commu_nm
+		FROM
+		    commu_bkmk
+		WHERE
+			commu_seq = #{commuSeq}
+		AND
+			emp_id = #{empId}
+	</select>
+	
+	
+	
+	
+	<insert id="insertCommuBKMK" parameterType="kr.or.ddit.community.vo.CommuBKMKVO">
+		INSERT INTO commu_bkmk (commu_seq, emp_id, commu_nm) 
+				VALUES (#{commuSeq}, #{empId}, #{commuNm})
+	</insert>
+	
+	
+	
+	
+	
+	
+	<delete id="deleteCommuBKMK" parameterType="kr.or.ddit.community.vo.CommuBKMKVO">
+		DELETE FROM commu_bkmk
+		WHERE commu_seq = #{commuSeq}
+		AND   emp_id = #{empId}
+	</delete>
+	
+	
+	
+	
+	
+	
+	<select id="selectEmpTitle" parameterType="String" resultType="String">
+		SELECT JOBTITLE_NM
+		FROM JOB_TITLE
+		WHERE JOBTITLE_ID = (SELECT JOBTITLE_ID
+	                         FROM EMP
+	                         WHERE EMP_ID = #{empId})
+	</select>
+
+
+
+
+
+	<select id="selectCommuBoardListEmpJobTitle" parameterType="String" resultType="kr.or.ddit.jobTitle.vo.JobTitleVO">
+		SELECT JOBTITLE_ID,
+			   JOBTITLE_NM
+		FROM JOB_TITLE
+		WHERE JOBTITLE_ID = (SELECT JOBTITLE_ID
+	                         FROM EMP
+	                         WHERE EMP_ID = #{empId})
+	</select>
+	
+	
+	
+	
+	<select id="selectCommuBoardListEmpDeptInfo" parameterType="kr.or.ddit.jobTitle.vo.JobTitleVO" resultType="kr.or.ddit.vote.vo.VotePostEmpDeptVO">
+		<choose>
+			<when test="jobtitleId lt 3">
+				select buseu.dept_name as dept_name, 
+					   team.dept_name as team_name
+				  from (select dept_name 
+				          from dept 
+				         where dept_id = (select dept_id 
+				                            from emp 
+				                           where emp_id = #{empId})) team,
+				       (select dept_name
+				          from dept
+				         where dept_id = (select UPPER_DEPT_ID 
+				                            from dept 
+				                           where dept_id = (select dept_id 
+				                                              from emp 
+				                                             where emp_id = #{empId}))) buseu
+			</when>
+			<when test="jobtitleId gte 3">
+				select team.dept_name as dept_name
+				  from (select dept_name 
+				          from dept 
+				         where dept_id = (select dept_id 
+				                            from emp 
+				                           where emp_id = #{empId})) team
+			</when>
+		</choose>
+	</select>
+
+
+
+
+
+</mapper>

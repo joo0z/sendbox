@@ -1,0 +1,162 @@
+<%@ page language="java" contentType="text/html; charset=UTF-8"
+    pageEncoding="UTF-8"%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core"%> 
+<%@ taglib prefix="fmt" uri="http://java.sun.com/jsp/jstl/fmt" %>
+
+<script>
+$(document).ready(function(){
+$('#thbox').on('click', function() {
+		checkAll();
+	})
+	
+	function checkAll() {
+		if ($('#thbox').is(':checked')) {
+			$("input[name=tdbox]").prop("checked", true);
+		} else {
+			$("input[name=tdbox]").prop("checked", false);
+		}
+	}
+	
+	function checkValue() {
+		var checked = "";
+		$("input[name='tdbox']:checked").each(function() {
+			checked = checked + $(this).val() + ",";
+		});
+		checked = checked.substring(0, checked.lastIndexOf(",")); //맨끝 콤마 지우기
+		return checked;
+	}
+	
+	$('#mail').on('click',function(){
+		var checked = checkValue();
+		if(checked ==''){
+			alert("메일 전송할 사람을 선택해주세요")
+		} else {
+			$('#mailInput').val(checked)
+			$('#mailForm').submit();
+		}
+	})
+	
+});	
+</script>
+<div class="table-responsive" style="overflow: hidden;">
+<br>
+	<table class="table table-bordered" id="dataTable" width="100%"
+		cellspacing="0" style="text-align: center;">
+		<thead>
+			<tr>
+				<th>사원명</th>
+				<th>이메일</th>
+				<th>전화번호</th>
+				<th>부서</th>
+				<th>직급</th>
+				<th>주소</th>
+			</tr>
+		</thead>
+		<tbody>
+			<c:forEach items="${empList }" var="emp">
+				<tr>
+					<td>${emp.empNm }</td>
+					<td>${emp.empMail }</td>
+					<td>${emp.empHp }</td>
+					<td>${emp.deptName }</td>
+					<td>${emp.jobtitleNm }</td>
+					<td>${emp.addr1 }${emp.addr2 }</td>
+				</tr>
+			</c:forEach>
+			<c:if test="${empList.size() == 0 }">
+				<td colspan="7">
+					등록된 사원이 없습니다.
+				</td>
+			</c:if>
+		</tbody>
+	</table>
+</div>
+
+
+<!-- 페이징 처리  -->
+<div class="row">
+	<div class="col-sm-12 col-md-5">
+		<div class="dataTables_info" id="dataTable_info" role="status"
+			aria-live="polite"></div>
+	</div>
+	<div class="col-sm-12 col-md-7">
+		<div class="dataTables_paginate" id="dataTable_paginate">
+			<ul class="pagination">
+				<c:choose>
+					<c:when test="${pagination.currentPageNo == 1 }">
+						<li class="paginate_button page-item previous disabled"
+							id="dataTable_previous"><a href="#"
+							aria-controls="dataTable" class="page-link"> <i
+								class="fas fa-angle-double-left"></i>
+						</a>
+						</li>
+						<li class="paginate_button page-item previous disabled"
+							id="dataTable_previous"><a href="#"
+							aria-controls="dataTable" class="page-link"> <i
+								class="fas fa-angle-left"></i>
+						</a>
+						</li>
+
+					</c:when>
+				<c:otherwise>
+					<li class="paginate_button page-item previous"
+						id="dataTable_previous"><a href="/address"
+						aria-controls="dataTable" class="page-link"> <i
+							class="fas fa-angle-double-left"></i>
+					</a></li>
+					<li class="paginate_button page-item previous"
+						id="dataTable_previous"><a
+						href="/address?pageIndex=${pagination.currentPageNo-1}"
+						aria-controls="dataTable" class="page-link"> <i
+							class="fas fa-angle-left"></i>
+					</a></li>
+				</c:otherwise>
+				</c:choose>
+				<c:forEach begin="${pagination.getFirstPageNoOnPageList() }"
+					end="${pagination.getLastPageNoOnPageList() }" step="1" var="i">
+					<c:choose>
+						<c:when test="${pagination.currentPageNo == i }">
+							<li class="paginate_button page-item active"><a
+								aria-controls="dataTable" class="page-link">${i }</a></li>
+						</c:when>
+						<c:otherwise>
+							<li class="paginate_button page-item"><a
+								href="/address?pageIndex=${i}" aria-controls="dataTable"
+								class="page-link">${i }</a></li>
+						</c:otherwise>
+					</c:choose>
+				</c:forEach>
+				<c:choose>
+					<c:when
+						test="${pagination.currentPageNo == pagination.getTotalPageCount()}">
+						<li class="paginate_button page-item next disabled"
+							id="dataTable_next"><a href="#"
+							aria-controls="dataTable" " class="page-link"> <i
+								class="fas fa-angle-right"></i>
+						</a></li>
+						<li class="paginate_button page-item next disabled"
+							id="dataTable_next"><a href="#"
+							aria-controls="dataTable" class="page-link"> <i
+								class="fas fa-angle-double-right"></i>
+						</a></li>
+					</c:when>
+					<c:otherwise>
+						<li class="paginate_button page-item next" id="dataTable_next">
+							<a href="/address?pageIndex=${pagination.currentPageNo+1}"
+							aria-controls="dataTable" data-dt-idx="2" tabindex="0"
+							class="page-link"> <i class="fas fa-angle-right"></i>
+						</a>
+						</li>
+						<li class="paginate_button page-item next" id="dataTable_next">
+							<a href="/address?pageIndex=${pagination.getTotalPageCount()}"
+							aria-controls="dataTable" data-dt-idx="2" tabindex="0"
+							class="page-link"> <i class="fas fa-angle-double-right"></i>
+						</a>
+						</li>
+					</c:otherwise>
+				</c:choose>
+			</ul>
+		</div>
+	</div>
+</div>
+
